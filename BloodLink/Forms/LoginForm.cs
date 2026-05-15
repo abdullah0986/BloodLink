@@ -16,6 +16,11 @@ namespace BloodLink.Forms
             InitializeComponent();
             _authService = new AuthService();
             ApplyTheme();
+
+        #if DEBUG
+            txtEmail.Text = "admin@bloodlink.com";
+            txtPassword.Text = "Admin@123";
+        # endif
         }
 
         // ─────────────────────────────────────────────────
@@ -41,8 +46,6 @@ namespace BloodLink.Forms
             lblEmail.ForeColor = AppTheme.BodyText;
             lblPassword.ForeColor = AppTheme.BodyText;
             lblError.ForeColor = AppTheme.ErrorRed;
-            lblRegisterLink.ForeColor = AppTheme.BloodRed;
-            lblGuestLink.ForeColor = AppTheme.MutedText;
 
             // ── Inputs ─────────────────────────────────
             txtEmail.BackColor = AppTheme.Surface;
@@ -108,17 +111,6 @@ namespace BloodLink.Forms
             var dashboard = new DashboardShell(user);
             dashboard.FormClosed += (s, e) => this.Close();
             dashboard.Show();
-        }
-
-        private void RegisterLink_Click(object sender, EventArgs e)
-        {
-            var registerForm = new RegisterForm();
-            registerForm.ShowDialog();
-        }
-
-        private void GuestLink_Click(object sender, EventArgs e)
-        {
-            MessageBox.Show("Guest search coming in Phase 2!", "BloodLink");
         }
     }
 }

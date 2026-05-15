@@ -8,8 +8,8 @@ namespace BloodLink.Models
 {
     public enum Role
     {
-        [Description("Donor - I want to donate blood")] Donor,
-        [Description("Finder - I want to find donor")] Finder
+        Admin,
+        Operator
     }
 
     public enum BloodGroup
@@ -29,5 +29,26 @@ namespace BloodLink.Models
         [Description("Male")] Male,
         [Description("Female")] Female,
         [Description("Other")] Other
+    }
+
+    public enum BloodUnitStatus
+    {
+        [Description("Available")] Available,
+        [Description("Reserved")] Reserved,
+        [Description("Used")] Used,
+        [Description("Expired")] Expired
+    }
+
+    public enum RequestStatus
+    {
+        [Description("Pending")] Pending,
+        [Description("Fulfilled")] Fulfilled,
+        [Description("Cancelled")] Cancelled
+    }
+
+    public enum DonorEligibility
+    {
+        [Description("Not Eligible")] NotEligible,
+        [Description("Eligible")] Eligible
     }
 }

@@ -14,8 +14,10 @@ namespace BloodLink.Models
         public string Area { get; set; }
         public int Age { get; set; }
         public Gender Gender { get; set; }
-        public bool IsAvailable { get; set; } = true;
+        public bool IsEligible { get; set; } = true;
         public DateTime? LastDonationDate { get; set; }
+        public DateTime? NextEligibleDate { get; set; }
+        public double Weight { get; set; }
         public int? UserId { get; set; }  // linked to User if donor registered
         public DateTime CreatedAt { get; set; }
     }

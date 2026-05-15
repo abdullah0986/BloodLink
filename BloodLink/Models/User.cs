@@ -11,9 +11,8 @@ namespace BloodLink.Models
         public string FullName { get; set; }
         public string Email { get; set; }
         public string Password { get; set; }
-        public Role Role { get; set; }  // "donor", "finder"
+        public Role Role { get; set; }
         public bool IsAdmin { get; set; } = false; // only admins can manage donors and view history
-        public bool IsVerified { get; set; } = false; // admin can verify donors
         public DateTime CreatedAt { get; set; }
     }
 }

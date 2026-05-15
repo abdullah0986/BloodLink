@@ -1,4 +1,6 @@
-﻿namespace BloodLink.Helpers
+﻿using System.Security.Policy;
+
+namespace BloodLink.Helpers
 {
     public static class AppTheme
     {
@@ -13,12 +15,17 @@
         // ── Dynamic Colors (change based on theme) ────
         public static Color SidebarBackground => IsDarkMode ? Color.FromArgb(13, 3, 2) : Color.FromArgb(26, 8, 5);
         public static Color MainBackground => IsDarkMode ? Color.FromArgb(26, 10, 8) : Color.FromArgb(250, 250, 250);
-        public static Color ContentBackground => IsDarkMode ? Color.FromArgb(40, 9, 5) : Color.FromArgb(255, 255, 255);
+        public static Color ContentBackground => IsDarkMode ? Color.FromArgb(40, 9, 5) : Color.FromArgb(237,235,235);
         public static Color Background => IsDarkMode ? Color.FromArgb(13, 13, 13) : Color.FromArgb(250, 250, 250);
         public static Color CardBackground => IsDarkMode ? Color.FromArgb(26, 10, 8) : Color.FromArgb(255, 255, 255);
         public static Color Surface => IsDarkMode ? Color.FromArgb(40, 9, 5) : Color.FromArgb(245, 240, 239);
         public static Color SurfaceHover => IsDarkMode ? Color.FromArgb(61, 12, 7) : Color.FromArgb(232, 213, 211);
         public static Color BorderColor => IsDarkMode ? Color.FromArgb(61, 26, 23) : Color.FromArgb(232, 213, 211);
+        public static Color IconColor => IsDarkMode ? Color.WhiteSmoke : Color.FromArgb(40, 9, 5);
+        public static Color TotalDonorIconColor => IsDarkMode ? Color.FromArgb(255, 82, 82) : Color.FromArgb(192, 57, 43);
+        public static Color BloodUnitsIconColor => IsDarkMode ? Color.FromArgb(0, 210, 211) : Color.FromArgb(30, 124, 74);
+        public static Color PatientsTodayIconColor => IsDarkMode ? Color.FromArgb(84, 160, 255) : Color.FromArgb(184, 134, 11);
+        public static Color ExpiringSoonIconColor => IsDarkMode ? Color.FromArgb(255, 82, 82) : Color.FromArgb(184, 134, 11);
 
         public static Color PrimaryText => IsDarkMode ? Color.FromArgb(245, 240, 239) : Color.FromArgb(26, 8, 5);
         public static Color BodyText => IsDarkMode ? Color.FromArgb(201, 184, 182) : Color.FromArgb(74, 46, 43);

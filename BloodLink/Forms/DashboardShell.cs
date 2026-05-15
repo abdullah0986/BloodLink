@@ -2,7 +2,7 @@
 using BloodLink.Models;
 using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.Windows.Forms;
+using BloodLink.Pages;
 
 namespace BloodLink.Forms
 {
@@ -16,7 +16,6 @@ namespace BloodLink.Forms
         // ─── Dynamic controls ──────────────────────────
         private Label _pageTitle;
         private Panel _themeTogglePanel;
-        private Panel _themeIndicator;
         private bool _isAnimating = false;
 
         public DashboardShell(User user)
@@ -49,35 +48,25 @@ namespace BloodLink.Forms
             if (_currentUser.IsAdmin)
             {
                 _navItems = new List<(string, string, Action)>
-                {
-                    ("⊞", "Dashboard",     () => LoadPage("Dashboard")),
-                    ("♥", "All Donors",    () => LoadPage("AllDonors")),
-                    ("☻", "All Users",     () => LoadPage("AllUsers")),
-                    ("✦", "Search Donors", () => LoadPage("Search")),
-                    ("▤", "Reports",       () => LoadPage("Reports")),
-                    ("✿", "Settings",      () => LoadPage("Settings")),
-                };
+        {
+            ("⊞", "Dashboard",        () => LoadPage("Dashboard")),
+            ("♥", "Donors",           () => LoadPage("Donors")),
+            ("✦", "Blood Inventory",  () => LoadPage("Inventory")),
+            ("☻", "Patients",         () => LoadPage("Patients")),
+            ("▤", "Reports",          () => LoadPage("Reports")),
+            ("☺", "Staff",            () => LoadPage("Staff")),
+            ("✿", "Settings",         () => LoadPage("Settings")),
+        };
             }
-            else if (_currentUser.Role == Role.Donor)
+            else // Operator
             {
                 _navItems = new List<(string, string, Action)>
-                {
-                    ("⊞", "Dashboard",     () => LoadPage("Dashboard")),
-                    ("☻", "My Profile",    () => LoadPage("DonorProfile")),
-                    ("▤", "My History",    () => LoadPage("DonationHistory")),
-                    ("✦", "Find Donors",   () => LoadPage("Search")),
-                    ("✿", "Settings",      () => LoadPage("Settings")),
-                };
-            }
-            else
-            {
-                _navItems = new List<(string, string, Action)>
-                {
-                    ("⊞", "Dashboard",     () => LoadPage("Dashboard")),
-                    ("✦", "Search Donors", () => LoadPage("Search")),
-                    ("★", "Saved Donors",  () => LoadPage("Saved")),
-                    ("✿", "Settings",      () => LoadPage("Settings")),
-                };
+        {
+            ("⊞", "Dashboard",        () => LoadPage("Dashboard")),
+            ("♥", "Donors",           () => LoadPage("Donors")),
+            ("✦", "Blood Inventory",  () => LoadPage("Inventory")),
+            ("☻", "Patients",         () => LoadPage("Patients")),
+        };
             }
         }
 
@@ -489,13 +478,11 @@ namespace BloodLink.Forms
                 _pageTitle.Text = pageName switch
                 {
                     "Dashboard" => "Dashboard",
-                    "Search" => "Search Donors",
-                    "DonorProfile" => "My Profile",
-                    "DonationHistory" => "Donation History",
-                    "AllDonors" => "All Donors",
-                    "AllUsers" => "All Users",
+                    "Donors" => "Donors",
+                    "Inventory" => "Blood Inventory",
+                    "Patients" => "Patients",
                     "Reports" => "Reports",
-                    "Saved" => "Saved Donors",
+                    "Staff" => "Staff Management",
                     "Settings" => "Settings",
                     _ => pageName
                 };
@@ -503,9 +490,25 @@ namespace BloodLink.Forms
 
             pnlContent.Controls.Clear();
 
+            if(pageName == "Dashboard")
+            {
+                var page = new AdminDashboardPage();
+                page.Dock = DockStyle.Fill;
+                pnlContent.Controls.Add(page);
+                return;
+            }
+
+            if(pageName == "Donors")
+            {
+                var page = new DonorPage();
+                page.Dock = DockStyle.Fill;
+                pnlContent.Controls.Add(page);
+                return;
+            }
+
             var placeholder = new Label
             {
-                Text = $"{pageName} page coming soon...",
+                Text = $"{_pageTitle?.Text} page coming soon...",
                 Font = AppTheme.FontH2,
                 ForeColor = AppTheme.MutedText,
                 BackColor = Color.Transparent,

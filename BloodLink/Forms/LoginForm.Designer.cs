@@ -38,8 +38,6 @@
             this.txtPassword = new System.Windows.Forms.TextBox();
             this.lblError = new System.Windows.Forms.Label();
             this.btnLogin = new System.Windows.Forms.Button();
-            this.lblRegisterLink = new System.Windows.Forms.Label();
-            this.lblGuestLink = new System.Windows.Forms.Label();
             this.pnlLeft.SuspendLayout();
             this.pnlRight.SuspendLayout();
             this.SuspendLayout();
@@ -83,8 +81,6 @@
             this.pnlRight.Controls.Add(this.txtPassword);
             this.pnlRight.Controls.Add(this.lblError);
             this.pnlRight.Controls.Add(this.btnLogin);
-            this.pnlRight.Controls.Add(this.lblRegisterLink);
-            this.pnlRight.Controls.Add(this.lblGuestLink);
 
             // ── lblWelcome ─────────────────────────────
             this.lblWelcome.AutoSize = true;
@@ -100,7 +96,7 @@
             this.lblSubtitle.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lblSubtitle.Location = new System.Drawing.Point(60, 116);
             this.lblSubtitle.Name = "lblSubtitle";
-            this.lblSubtitle.Text = "Login to your BloodLink account";
+            this.lblSubtitle.Text = "BloodLink Staff Portal";
 
             // ── lblEmail ───────────────────────────────
             this.lblEmail.AutoSize = true;
@@ -160,26 +156,6 @@
             this.btnLogin.UseVisualStyleBackColor = false;
             this.btnLogin.Click += new System.EventHandler(this.LoginButton_Click);
 
-            // ── lblRegisterLink ────────────────────────
-            this.lblRegisterLink.AutoSize = true;
-            this.lblRegisterLink.BackColor = System.Drawing.Color.Transparent;
-            this.lblRegisterLink.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.lblRegisterLink.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.lblRegisterLink.Location = new System.Drawing.Point(60, 410);
-            this.lblRegisterLink.Name = "lblRegisterLink";
-            this.lblRegisterLink.Text = "Don\'t have an account? Register here";
-            this.lblRegisterLink.Click += new System.EventHandler(this.RegisterLink_Click);
-
-            // ── lblGuestLink ───────────────────────────
-            this.lblGuestLink.AutoSize = true;
-            this.lblGuestLink.BackColor = System.Drawing.Color.Transparent;
-            this.lblGuestLink.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.lblGuestLink.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.lblGuestLink.Location = new System.Drawing.Point(60, 440);
-            this.lblGuestLink.Name = "lblGuestLink";
-            this.lblGuestLink.Text = "Continue as Guest →";
-            this.lblGuestLink.Click += new System.EventHandler(this.GuestLink_Click);
-
             // ── LoginForm ──────────────────────────────
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -212,7 +188,5 @@
         private System.Windows.Forms.TextBox txtPassword;
         private System.Windows.Forms.Label lblError;
         private System.Windows.Forms.Button btnLogin;
-        private System.Windows.Forms.Label lblRegisterLink;
-        private System.Windows.Forms.Label lblGuestLink;
     }
 }

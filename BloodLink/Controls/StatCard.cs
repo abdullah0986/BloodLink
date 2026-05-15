@@ -17,8 +17,9 @@ namespace BloodLink.Controls
         {
             DoubleBuffered = true;
             BackColor = Color.Transparent;
-            Size = new Size(300, 110);
+            // create child controls before setting size to avoid resize events
             BuildControls();
+            Size = new Size(300, 110);
         }
 
         private void BuildControls()
@@ -144,7 +145,7 @@ namespace BloodLink.Controls
         protected override void OnResize(EventArgs e)
         {
             base.OnResize(e);
-            // keep labels positioned relative to size
+            if (_valueLabel == null || _subtitleLabel == null) return;
             _valueLabel.Location = new Point(72, 36);
             _subtitleLabel.Location = new Point(72, Height - 28);
             Invalidate();

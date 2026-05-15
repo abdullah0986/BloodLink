@@ -7,16 +7,16 @@ namespace BloodLink.Database
     public class UserRepository
     {
         // Creates a new user in the database
-        // Used by: RegisterForm
+        // Used by: StaffManagementPage when admin creates operator
         public bool CreateUser(User user)
         {
             try
             {
                 using var connection = DatabaseHelper.GetConnection();
                 string sql = @"
-                    INSERT INTO Users (FullName, Email, Password, Role, IsAdmin, IsVerified, CreatedAt)
-                    VALUES (@fullName, @email, @password, @role, @isAdmin, @isVerified, @createdAt);
-                ";
+    INSERT INTO Users (FullName, Email, Password, Role, IsAdmin, CreatedAt)
+    VALUES (@fullName, @email, @password, @role, @isAdmin, @createdAt);
+";
 
                 using var command = new SqliteCommand(sql, connection);
                 command.Parameters.AddWithValue("@fullName", user.FullName);
@@ -24,7 +24,6 @@ namespace BloodLink.Database
                 command.Parameters.AddWithValue("@password", user.Password);
                 command.Parameters.AddWithValue("@role", user.Role.ToString());
                 command.Parameters.AddWithValue("@isAdmin", user.IsAdmin ? 1 : 0);
-                command.Parameters.AddWithValue("@isVerified", user.IsVerified ? 1 : 0);
                 command.Parameters.AddWithValue("@createdAt", user.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"));
                 command.ExecuteNonQuery();
                 return true;
@@ -112,7 +111,6 @@ namespace BloodLink.Database
                 Password = reader["Password"].ToString(),
                 Role = Enum.Parse<Role>(reader["Role"].ToString()),
                 IsAdmin = Convert.ToInt32(reader["IsAdmin"]) == 1,
-                IsVerified = Convert.ToInt32(reader["IsVerified"]) == 1,
                 CreatedAt = DateTime.Parse(reader["CreatedAt"].ToString())
             };
         }

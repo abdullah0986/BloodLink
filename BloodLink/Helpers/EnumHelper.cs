@@ -6,7 +6,7 @@ using System.ComponentModel;
 using System.Reflection;
 
 namespace BloodLink.Helpers
-{
+{   
     public static class EnumHelper
     {
         // Gets the description text from enum value

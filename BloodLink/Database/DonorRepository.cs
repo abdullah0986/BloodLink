@@ -1,16 +1,14 @@
 ﻿using BloodLink.Helpers;
 using BloodLink.Models;
 using Microsoft.Data.Sqlite;
+using System.CodeDom;
+using System.Reflection.Metadata;
+using System.Windows.Media.Animation;
 
 namespace BloodLink.Database
 {
     public class DonorRepository
     {
-        // ─────────────────────────────────────────────────
-        // ADD DONOR
-        // Called by: DonorService.RegisterDonor()
-        // Returns: new donor's Id, or -1 on failure
-        // ─────────────────────────────────────────────────
         public int AddDonor(Donor donor)
         {
             try
@@ -18,10 +16,9 @@ namespace BloodLink.Database
                 using var connection = DatabaseHelper.GetConnection();
                 string sql = @"
                     INSERT INTO Donors (FullName, BloodGroup, Phone, City, Area, Age, Gender,
-                                        IsAvailable, LastDonationDate, UserId, CreatedAt)
-                    VALUES (@fullName, @bloodGroup, @phone, @city, @area, @age, @gender,
-                            @isAvailable, @lastDonationDate, @userId, @createdAt);
-                    SELECT last_insert_rowid();
+                                        IsEligible, LastDonationDate, NextEligibleDate, Weight, UserId, CreatedAt)
+VALUES (@fullName, @bloodGroup, @phone, @city, @area, @age, @gender,
+        @isEligible, @lastDonationDate, @nextEligibleDate, @weight, @userId, @createdAt)
                 ";
 
                 using var command = new SqliteCommand(sql, connection);
@@ -32,7 +29,11 @@ namespace BloodLink.Database
                 command.Parameters.AddWithValue("@area", donor.Area ?? "");
                 command.Parameters.AddWithValue("@age", donor.Age);
                 command.Parameters.AddWithValue("@gender", donor.Gender.ToString());
-                command.Parameters.AddWithValue("@isAvailable", donor.IsAvailable ? 1 : 0);
+                command.Parameters.AddWithValue("@isEligible", donor.IsEligible ? 1 : 0);
+                command.Parameters.AddWithValue("@nextEligibleDate", donor.NextEligibleDate.HasValue
+                    ? donor.NextEligibleDate.Value.ToString("yyyy-MM-dd")
+                    : (object)DBNull.Value);
+                command.Parameters.AddWithValue("@weight", donor.Weight);
                 command.Parameters.AddWithValue("@lastDonationDate", donor.LastDonationDate.HasValue
                                                                         ? donor.LastDonationDate.Value.ToString("yyyy-MM-dd")
                                                                         : (object)DBNull.Value);
@@ -50,12 +51,6 @@ namespace BloodLink.Database
                 return -1;
             }
         }
-
-        // ─────────────────────────────────────────────────
-        // GET DONOR BY USER ID
-        // Called by: DonorDashboardPage to load logged-in donor's profile
-        // Returns: Donor if found, null if user has no donor profile yet
-        // ─────────────────────────────────────────────────
         public Donor? GetDonorByUserId(int userId)
         {
             try
@@ -79,10 +74,6 @@ namespace BloodLink.Database
             }
         }
 
-        // ─────────────────────────────────────────────────
-        // GET DONOR BY ID
-        // Called by: DonorProfilePage, DonorDetailPopup
-        // ─────────────────────────────────────────────────
         public Donor? GetDonorById(int donorId)
         {
             try
@@ -106,18 +97,13 @@ namespace BloodLink.Database
             }
         }
 
-        // ─────────────────────────────────────────────────
-        // GET ALL DONORS
-        // Called by: AdminDashboardPage, SearchDonorsPage
-        // Returns: all donors sorted newest first
-        // ─────────────────────────────────────────────────
         public List<Donor> GetAllDonors()
         {
             var donors = new List<Donor>();
             try
             {
                 using var connection = DatabaseHelper.GetConnection();
-                string sql = "SELECT * FROM Donors ORDER BY CreatedAt DESC;";
+                string sql = "SELECT * FROM Donors ORDER BY CreatedAt ASC;";
 
                 using var command = new SqliteCommand(sql, connection);
                 using var reader = command.ExecuteReader();
@@ -132,56 +118,46 @@ namespace BloodLink.Database
             return donors;
         }
 
-        // ─────────────────────────────────────────────────
-        // SEARCH DONORS
-        // Called by: DonorService.SearchDonors()
-        // bloodGroup = null means "any blood group"
-        // city = null or empty means "any city"
-        // availableOnly = true filters IsAvailable = 1
-        // bloodGroups = list (for compatibility search — multiple groups at once)
-        // ─────────────────────────────────────────────────
-        public List<Donor> SearchDonors(List<string>? bloodGroups, string? city, bool availableOnly)
+
+        public List<Donor> SearchDonors(string searchTerm, List<string>? bloodGroups, DonorEligibility? eligibility)
         {
             var donors = new List<Donor>();
             try
             {
-                using var connection = DatabaseHelper.GetConnection();
-
-                // Build query dynamically based on filters
                 var conditions = new List<string>();
                 var parameters = new Dictionary<string, object>();
 
+                conditions.Add("(FullName LIKE @search OR City LIKE @search OR Phone LIKE @search)");
+                parameters["@search"] = $"%{searchTerm.Trim()}%";
+
                 if (bloodGroups != null && bloodGroups.Count > 0)
                 {
-                    // Build: BloodGroup IN (@bg0, @bg1, ...)
                     var placeholders = bloodGroups.Select((_, i) => $"@bg{i}").ToList();
                     conditions.Add($"BloodGroup IN ({string.Join(", ", placeholders)})");
                     for (int i = 0; i < bloodGroups.Count; i++)
                         parameters[$"@bg{i}"] = bloodGroups[i];
                 }
 
-                if (!string.IsNullOrWhiteSpace(city))
+                if (eligibility != null)
                 {
-                    conditions.Add("City LIKE @city");
-                    parameters["@city"] = $"%{city.Trim()}%";
+                    conditions.Add("isEligible = @eligibility");
+                    parameters["@eligibility"] = (int)eligibility;
                 }
-
-                if (availableOnly)
-                    conditions.Add("IsAvailable = 1");
-
-                string whereClause = conditions.Count > 0
-                    ? "WHERE " + string.Join(" AND ", conditions)
-                    : "";
-
-                string sql = $"SELECT * FROM Donors {whereClause} ORDER BY CreatedAt DESC;";
-
+                var WhereClause = "WHERE " + string.Join(" AND ", conditions);
+                var sql = $@"SELECT * FROM Donors {WhereClause} ORDER BY CreatedAt DESC";
+                using var connection = DatabaseHelper.GetConnection();
                 using var command = new SqliteCommand(sql, connection);
-                foreach (var param in parameters)
+
+                foreach(var param in parameters)
+                {
                     command.Parameters.AddWithValue(param.Key, param.Value);
+                }
 
                 using var reader = command.ExecuteReader();
                 while (reader.Read())
+                {
                     donors.Add(MapDonor(reader));
+                }
             }
             catch (Exception ex)
             {
@@ -190,11 +166,6 @@ namespace BloodLink.Database
             return donors;
         }
 
-        // ─────────────────────────────────────────────────
-        // UPDATE DONOR
-        // Called by: AddDonorPage (edit mode)
-        // Returns: true if success
-        // ─────────────────────────────────────────────────
         public bool UpdateDonor(Donor donor)
         {
             try
@@ -235,18 +206,12 @@ namespace BloodLink.Database
                 return false;
             }
         }
-
-        // ─────────────────────────────────────────────────
-        // TOGGLE AVAILABILITY
-        // Called by: DonorProfilePage toggle button
-        // Flips IsAvailable between 0 and 1
-        // ─────────────────────────────────────────────────
-        public bool ToggleAvailability(int donorId, bool newStatus)
+        public bool ToggleEligibility(int donorId, bool newStatus)
         {
             try
             {
                 using var connection = DatabaseHelper.GetConnection();
-                string sql = "UPDATE Donors SET IsAvailable = @status WHERE Id = @id;";
+                string sql = "UPDATE Donors SET IsEligible = @status WHERE Id = @id;";
 
                 using var command = new SqliteCommand(sql, connection);
                 command.Parameters.AddWithValue("@status", newStatus ? 1 : 0);
@@ -262,12 +227,6 @@ namespace BloodLink.Database
             }
         }
 
-        // ─────────────────────────────────────────────────
-        // GET DONOR STATS
-        // Called by: DonorService.GetDashboardStats()
-        // Returns: Dictionary of BloodGroup label → count
-        //          + totals for dashboard cards
-        // ─────────────────────────────────────────────────
         public DonorStats GetDonorStats()
         {
             var stats = new DonorStats();
@@ -280,7 +239,7 @@ namespace BloodLink.Database
                     stats.TotalDonors = Convert.ToInt32(cmd.ExecuteScalar());
 
                 // Available donors
-                using (var cmd = new SqliteCommand("SELECT COUNT(*) FROM Donors WHERE IsAvailable = 1;", connection))
+                using (var cmd = new SqliteCommand("SELECT COUNT(*) FROM Donors WHERE IsEligible  = 1;", connection))
                     stats.AvailableDonors = Convert.ToInt32(cmd.ExecuteScalar());
 
                 // Distinct cities
@@ -304,10 +263,6 @@ namespace BloodLink.Database
             }
             return stats;
         }
-
-        // ─────────────────────────────────────────────────
-        // PRIVATE — MAP ROW TO DONOR OBJECT
-        // ─────────────────────────────────────────────────
         private Donor MapDonor(SqliteDataReader reader)
         {
             return new Donor
@@ -317,10 +272,14 @@ namespace BloodLink.Database
                 BloodGroup = EnumHelper.GetValueFromDescription<BloodGroup>(reader["BloodGroup"].ToString()!),
                 Phone = reader["Phone"].ToString()!,
                 City = reader["City"].ToString()!,
-                Area = reader["Area"].ToString(),
+                Area = reader["Area"].ToString()!,
                 Age = reader["Age"] != DBNull.Value ? Convert.ToInt32(reader["Age"]) : 0,
                 Gender = Enum.Parse<Gender>(reader["Gender"].ToString()!),
-                IsAvailable = Convert.ToInt32(reader["IsAvailable"]) == 1,
+                IsEligible = Convert.ToInt32(reader["IsEligible"]) == 1,
+                Weight = reader["Weight"] != DBNull.Value ? Convert.ToDouble(reader["Weight"]) : 0,
+                NextEligibleDate = reader["NextEligibleDate"] != DBNull.Value
+    ? DateTime.Parse(reader["NextEligibleDate"].ToString()!)
+    : null,
                 LastDonationDate = reader["LastDonationDate"] != DBNull.Value
                                     ? DateTime.Parse(reader["LastDonationDate"].ToString()!)
                                     : null,
@@ -332,9 +291,6 @@ namespace BloodLink.Database
         }
     }
 
-    // ─────────────────────────────────────────────────
-    // DONOR STATS — simple data bag for dashboard cards
-    // ─────────────────────────────────────────────────
     public class DonorStats
     {
         public int TotalDonors { get; set; }
