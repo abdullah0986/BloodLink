@@ -15,13 +15,14 @@ namespace BloodLink.Database
             {
                 using var connection = DatabaseHelper.GetConnection();
                 string sql = @"
-                    INSERT INTO Donors (FullName, BloodGroup, Phone, City, Area, Age, Gender,
+                    INSERT INTO Donors (Id, FullName, BloodGroup, Phone, City, Area, Age, Gender,
                                         IsEligible, LastDonationDate, NextEligibleDate, Weight, UserId, CreatedAt)
-VALUES (@fullName, @bloodGroup, @phone, @city, @area, @age, @gender,
+VALUES (@Id, @fullName, @bloodGroup, @phone, @city, @area, @age, @gender,
         @isEligible, @lastDonationDate, @nextEligibleDate, @weight, @userId, @createdAt)
                 ";
 
                 using var command = new SqliteCommand(sql, connection);
+                command.Parameters.AddWithValue("@Id", donor.Id.ToString());
                 command.Parameters.AddWithValue("@fullName", donor.FullName);
                 command.Parameters.AddWithValue("@bloodGroup", EnumHelper.GetDescription(donor.BloodGroup));
                 command.Parameters.AddWithValue("@phone", donor.Phone);
@@ -37,13 +38,11 @@ VALUES (@fullName, @bloodGroup, @phone, @city, @area, @age, @gender,
                 command.Parameters.AddWithValue("@lastDonationDate", donor.LastDonationDate.HasValue
                                                                         ? donor.LastDonationDate.Value.ToString("yyyy-MM-dd")
                                                                         : (object)DBNull.Value);
-                command.Parameters.AddWithValue("@userId", donor.UserId.HasValue
-                                                                        ? (object)donor.UserId.Value
-                                                                        : DBNull.Value);
+                command.Parameters.AddWithValue("@userId", donor.UserId.ToString());
                 command.Parameters.AddWithValue("@createdAt", donor.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"));
 
-                object? result = command.ExecuteScalar();
-                return Convert.ToInt32(result);
+                int result = command.ExecuteNonQuery();
+                return result;
             }
             catch (Exception ex)
             {
@@ -180,7 +179,10 @@ VALUES (@fullName, @bloodGroup, @phone, @city, @area, @age, @gender,
                         Area             = @area,
                         Age              = @age,
                         Gender           = @gender,
-                        LastDonationDate = @lastDonationDate
+                        IsEligible       = @isEligible,
+                        Weight           = @weight,
+                        LastDonationDate = @lastDonationDate,
+                        UserId           = @userId
                     WHERE Id = @id;
                 ";
 
@@ -192,9 +194,12 @@ VALUES (@fullName, @bloodGroup, @phone, @city, @area, @age, @gender,
                 command.Parameters.AddWithValue("@area", donor.Area ?? "");
                 command.Parameters.AddWithValue("@age", donor.Age);
                 command.Parameters.AddWithValue("@gender", donor.Gender.ToString());
+                command.Parameters.AddWithValue("@isEligible", donor.IsEligible ? 1 : 0);
+                command.Parameters.AddWithValue("@weight", donor.Weight);
                 command.Parameters.AddWithValue("@lastDonationDate", donor.LastDonationDate.HasValue
                                                                         ? donor.LastDonationDate.Value.ToString("yyyy-MM-dd")
                                                                         : (object)DBNull.Value);
+                command.Parameters.AddWithValue("@userId", donor.UserId.ToString());
                 command.Parameters.AddWithValue("@id", donor.Id);
 
                 int rows = command.ExecuteNonQuery();
@@ -263,11 +268,30 @@ VALUES (@fullName, @bloodGroup, @phone, @city, @area, @age, @gender,
             }
             return stats;
         }
+
+        public bool DeleteDonor(string donorId)
+        {
+            try
+            {
+                using var connection = DatabaseHelper.GetConnection();
+                string sql = "DELETE FROM Donors WHERE Id = @id;";
+                using var command = new SqliteCommand(sql, connection);
+                command.Parameters.AddWithValue("@id", donorId);
+                int rows = command.ExecuteNonQuery();
+                return rows > 0;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error deleting donor: {ex.Message}");
+                return false;
+            }
+        }
+
         private Donor MapDonor(SqliteDataReader reader)
         {
             return new Donor
             {
-                Id = Convert.ToInt32(reader["Id"]),
+                Id = reader["Id"].ToString()!,
                 FullName = reader["FullName"].ToString()!,
                 BloodGroup = EnumHelper.GetValueFromDescription<BloodGroup>(reader["BloodGroup"].ToString()!),
                 Phone = reader["Phone"].ToString()!,
@@ -283,9 +307,7 @@ VALUES (@fullName, @bloodGroup, @phone, @city, @area, @age, @gender,
                 LastDonationDate = reader["LastDonationDate"] != DBNull.Value
                                     ? DateTime.Parse(reader["LastDonationDate"].ToString()!)
                                     : null,
-                UserId = reader["UserId"] != DBNull.Value
-                                    ? Convert.ToInt32(reader["UserId"])
-                                    : null,
+                UserId = reader["UserId"].ToString(),
                 CreatedAt = DateTime.Parse(reader["CreatedAt"].ToString()!)
             };
         }

@@ -36,6 +36,7 @@ namespace BloodLink.Helpers
         public static readonly Color BrightRed = Color.FromArgb(160, 16, 4);
         public static readonly Color BloodRed = Color.FromArgb(192, 57, 43);
         public static readonly Color LightRed = Color.FromArgb(250, 219, 216);
+        public static readonly Color PinkRed = Color.FromArgb(245, 200, 195);
         public static readonly Color SuccessGreen = Color.FromArgb(30, 124, 74);
         public static readonly Color WarningAmber = Color.FromArgb(184, 134, 11);
         public static readonly Color ErrorRed = Color.FromArgb(192, 57, 43);
@@ -53,6 +54,7 @@ namespace BloodLink.Helpers
         public static readonly Font FontLabel = new Font("Segoe UI", 9, FontStyle.Bold);
         public static readonly Font FontBody = new Font("Segoe UI", 11, FontStyle.Regular);
         public static readonly Font FontSmall = new Font("Segoe UI", 9, FontStyle.Regular);
+        public static readonly Font FontSmaller = new Font("Segoe UI", 8, FontStyle.Regular);
         public static readonly Font FontButton = new Font("Segoe UI", 11, FontStyle.Bold);
         public static readonly Font FontHeader = new Font("Segoe UI", 10, FontStyle.Regular);
 

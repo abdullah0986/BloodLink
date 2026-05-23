@@ -40,6 +40,9 @@
             DonorLastDonation = new DataGridViewTextBoxColumn();
             DonorEligiblility = new DataGridViewTextBoxColumn();
             tlpDonorMenuStripe = new TableLayoutPanel();
+            btnDelete = new Button();
+            btnView = new Button();
+            btnUpdate = new Button();
             cbStatus = new ComboBox();
             cbBloodGroups = new ComboBox();
             pnlTextBoxDonorSearch = new Panel();
@@ -61,7 +64,7 @@
             pnlDonorPage.Dock = DockStyle.Fill;
             pnlDonorPage.Location = new Point(0, 0);
             pnlDonorPage.Name = "pnlDonorPage";
-            pnlDonorPage.Size = new Size(725, 462);
+            pnlDonorPage.Size = new Size(942, 462);
             pnlDonorPage.TabIndex = 0;
             // 
             // tlpDonorPage
@@ -76,7 +79,7 @@
             tlpDonorPage.RowCount = 2;
             tlpDonorPage.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));
             tlpDonorPage.RowStyles.Add(new RowStyle());
-            tlpDonorPage.Size = new Size(725, 462);
+            tlpDonorPage.Size = new Size(942, 462);
             tlpDonorPage.TabIndex = 1;
             // 
             // pnlDonorsList
@@ -87,7 +90,7 @@
             pnlDonorsList.Location = new Point(3, 47);
             pnlDonorsList.Margin = new Padding(3, 7, 3, 3);
             pnlDonorsList.Name = "pnlDonorsList";
-            pnlDonorsList.Size = new Size(719, 421);
+            pnlDonorsList.Size = new Size(936, 421);
             pnlDonorsList.TabIndex = 1;
             // 
             // pnlDgvDonorsStyling
@@ -98,9 +101,10 @@
             pnlDgvDonorsStyling.Dock = DockStyle.Top;
             pnlDgvDonorsStyling.Location = new Point(0, 0);
             pnlDgvDonorsStyling.Name = "pnlDgvDonorsStyling";
-            pnlDgvDonorsStyling.Padding = new Padding(15, 23, 15, 23);
-            pnlDgvDonorsStyling.Size = new Size(719, 412);
+            pnlDgvDonorsStyling.Padding = new Padding(15, 23, 15, 8);
+            pnlDgvDonorsStyling.Size = new Size(936, 397);
             pnlDgvDonorsStyling.TabIndex = 0;
+            pnlDgvDonorsStyling.Paint += pnlDgvDonorsStyling_Paint;
             // 
             // dgvDonors
             // 
@@ -118,11 +122,12 @@
             dgvDonors.EnableHeadersVisualStyles = false;
             dgvDonors.Location = new Point(15, 23);
             dgvDonors.Margin = new Padding(0);
+            dgvDonors.MultiSelect = false;
             dgvDonors.Name = "dgvDonors";
             dgvDonors.ReadOnly = true;
             dgvDonors.RowHeadersVisible = false;
             dgvDonors.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dgvDonors.Size = new Size(689, 366);
+            dgvDonors.Size = new Size(906, 366);
             dgvDonors.TabIndex = 5;
             // 
             // DonorName
@@ -163,11 +168,17 @@
             // 
             // tlpDonorMenuStripe
             // 
-            tlpDonorMenuStripe.ColumnCount = 4;
+            tlpDonorMenuStripe.ColumnCount = 7;
             tlpDonorMenuStripe.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             tlpDonorMenuStripe.ColumnStyles.Add(new ColumnStyle());
             tlpDonorMenuStripe.ColumnStyles.Add(new ColumnStyle());
             tlpDonorMenuStripe.ColumnStyles.Add(new ColumnStyle());
+            tlpDonorMenuStripe.ColumnStyles.Add(new ColumnStyle());
+            tlpDonorMenuStripe.ColumnStyles.Add(new ColumnStyle());
+            tlpDonorMenuStripe.ColumnStyles.Add(new ColumnStyle());
+            tlpDonorMenuStripe.Controls.Add(btnDelete, 6, 0);
+            tlpDonorMenuStripe.Controls.Add(btnView, 5, 0);
+            tlpDonorMenuStripe.Controls.Add(btnUpdate, 4, 0);
             tlpDonorMenuStripe.Controls.Add(cbStatus, 2, 0);
             tlpDonorMenuStripe.Controls.Add(cbBloodGroups, 1, 0);
             tlpDonorMenuStripe.Controls.Add(pnlTextBoxDonorSearch, 0, 0);
@@ -177,8 +188,50 @@
             tlpDonorMenuStripe.Name = "tlpDonorMenuStripe";
             tlpDonorMenuStripe.RowCount = 1;
             tlpDonorMenuStripe.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            tlpDonorMenuStripe.Size = new Size(719, 34);
+            tlpDonorMenuStripe.Size = new Size(936, 34);
             tlpDonorMenuStripe.TabIndex = 2;
+            // 
+            // btnDelete
+            // 
+            btnDelete.AutoSize = true;
+            btnDelete.Dock = DockStyle.Fill;
+            btnDelete.FlatStyle = FlatStyle.Flat;
+            btnDelete.Location = new Point(833, 3);
+            btnDelete.Margin = new Padding(4, 3, 0, 7);
+            btnDelete.Name = "btnDelete";
+            btnDelete.Size = new Size(103, 24);
+            btnDelete.TabIndex = 8;
+            btnDelete.Text = "🗑 Delete Donor";
+            btnDelete.UseVisualStyleBackColor = false;
+            btnDelete.Click += btnDelete_Click;
+            // 
+            // btnView
+            // 
+            btnView.AutoSize = true;
+            btnView.Dock = DockStyle.Fill;
+            btnView.FlatStyle = FlatStyle.Flat;
+            btnView.Location = new Point(734, 3);
+            btnView.Margin = new Padding(4, 3, 0, 7);
+            btnView.Name = "btnView";
+            btnView.Size = new Size(95, 24);
+            btnView.TabIndex = 7;
+            btnView.Text = "👁️ View Donor";
+            btnView.UseVisualStyleBackColor = false;
+            btnView.Click += btnView_Click;
+            // 
+            // btnUpdate
+            // 
+            btnUpdate.AutoSize = true;
+            btnUpdate.Dock = DockStyle.Fill;
+            btnUpdate.FlatStyle = FlatStyle.Flat;
+            btnUpdate.Location = new Point(622, 3);
+            btnUpdate.Margin = new Padding(4, 3, 0, 7);
+            btnUpdate.Name = "btnUpdate";
+            btnUpdate.Size = new Size(108, 24);
+            btnUpdate.TabIndex = 6;
+            btnUpdate.Text = "⟳ Update Donor";
+            btnUpdate.UseVisualStyleBackColor = false;
+            btnUpdate.Click += btnUpdate_Click;
             // 
             // cbStatus
             // 
@@ -186,7 +239,7 @@
             cbStatus.DrawMode = DrawMode.OwnerDrawFixed;
             cbStatus.DropDownStyle = ComboBoxStyle.DropDownList;
             cbStatus.FormattingEnabled = true;
-            cbStatus.Location = new Point(541, 3);
+            cbStatus.Location = new Point(440, 3);
             cbStatus.Margin = new Padding(4, 3, 4, 3);
             cbStatus.Name = "cbStatus";
             cbStatus.Size = new Size(82, 24);
@@ -200,7 +253,7 @@
             cbBloodGroups.DrawMode = DrawMode.OwnerDrawFixed;
             cbBloodGroups.DropDownStyle = ComboBoxStyle.DropDownList;
             cbBloodGroups.FormattingEnabled = true;
-            cbBloodGroups.Location = new Point(451, 3);
+            cbBloodGroups.Location = new Point(350, 3);
             cbBloodGroups.Margin = new Padding(4, 3, 4, 3);
             cbBloodGroups.Name = "cbBloodGroups";
             cbBloodGroups.Size = new Size(82, 24);
@@ -217,7 +270,7 @@
             pnlTextBoxDonorSearch.Margin = new Padding(3, 2, 4, 3);
             pnlTextBoxDonorSearch.Name = "pnlTextBoxDonorSearch";
             pnlTextBoxDonorSearch.Padding = new Padding(12, 5, 0, 5);
-            pnlTextBoxDonorSearch.Size = new Size(440, 29);
+            pnlTextBoxDonorSearch.Size = new Size(339, 29);
             pnlTextBoxDonorSearch.TabIndex = 5;
             // 
             // tbSearchDonor
@@ -228,7 +281,7 @@
             tbSearchDonor.Margin = new Padding(0);
             tbSearchDonor.Name = "tbSearchDonor";
             tbSearchDonor.PlaceholderText = "Search by Name or Phone";
-            tbSearchDonor.Size = new Size(428, 16);
+            tbSearchDonor.Size = new Size(327, 16);
             tbSearchDonor.TabIndex = 1;
             tbSearchDonor.TextChanged += tbSearchDonor_TextChanged;
             // 
@@ -237,13 +290,14 @@
             btnAddDonor.AutoSize = true;
             btnAddDonor.Dock = DockStyle.Fill;
             btnAddDonor.FlatStyle = FlatStyle.Flat;
-            btnAddDonor.Location = new Point(631, 3);
+            btnAddDonor.Location = new Point(530, 3);
             btnAddDonor.Margin = new Padding(4, 3, 0, 7);
             btnAddDonor.Name = "btnAddDonor";
             btnAddDonor.Size = new Size(88, 24);
             btnAddDonor.TabIndex = 4;
             btnAddDonor.Text = "+ Add Donor";
             btnAddDonor.UseVisualStyleBackColor = false;
+            btnAddDonor.Click += btnAddDonor_Click;
             // 
             // DonorPage
             // 
@@ -251,7 +305,7 @@
             AutoScaleMode = AutoScaleMode.Font;
             Controls.Add(pnlDonorPage);
             Name = "DonorPage";
-            Size = new Size(725, 462);
+            Size = new Size(942, 462);
             pnlDonorPage.ResumeLayout(false);
             tlpDonorPage.ResumeLayout(false);
             pnlDonorsList.ResumeLayout(false);
@@ -284,5 +338,8 @@
         private DataGridViewTextBoxColumn DonorCity;
         private DataGridViewTextBoxColumn DonorLastDonation;
         private DataGridViewTextBoxColumn DonorEligiblility;
+        private Button btnDelete;
+        private Button btnView;
+        private Button btnUpdate;
     }
 }

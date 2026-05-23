@@ -6,8 +6,6 @@ namespace BloodLink.Database
 {
     public class UserRepository
     {
-        // Creates a new user in the database
-        // Used by: StaffManagementPage when admin creates operator
         public bool CreateUser(User user)
         {
             try
@@ -105,7 +103,7 @@ namespace BloodLink.Database
         {
             return new User
             {
-                Id = Convert.ToInt32(reader["Id"]),
+                Id = reader["Id"].ToString(),
                 FullName = reader["FullName"].ToString(),
                 Email = reader["Email"].ToString(),
                 Password = reader["Password"].ToString(),

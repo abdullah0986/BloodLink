@@ -3,17 +3,18 @@ using BloodLink.Models;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using BloodLink.Pages;
+using BloodLink.Services;
+using Timer =  System.Windows.Forms.Timer;
 
 namespace BloodLink.Forms
 {
     public partial class DashboardShell : Form
     {
-        // ─── State ─────────────────────────────────────
+        private readonly BloodUnitService _unitService = new BloodUnitService();
         private readonly User _currentUser;
         private Button _activeNavButton;
         private List<(string icon, string label, Action onClick)> _navItems;
 
-        // ─── Dynamic controls ──────────────────────────
         private Label _pageTitle;
         private Panel _themeTogglePanel;
         private bool _isAnimating = false;
@@ -27,11 +28,8 @@ namespace BloodLink.Forms
             BuildSidebarContent();
             BuildHeaderContent();
             LoadDefaultPage();
+            CheckAndExpireUnits();
         }
-
-        // ─────────────────────────────────────────────────
-        // THEME
-        // ─────────────────────────────────────────────────
         private void ApplyTheme()
         {
             this.BackColor = AppTheme.MainBackground;
@@ -500,7 +498,17 @@ namespace BloodLink.Forms
 
             if(pageName == "Donors")
             {
-                var page = new DonorPage();
+                DonorService donorService = new DonorService();
+                var page = new DonorPage(donorService, _currentUser);
+                page.Dock = DockStyle.Fill;
+                pnlContent.Controls.Add(page);
+                return;
+            }
+
+            if(pageName == "Inventory")
+            {
+                BloodUnitService bloodUnitService = new BloodUnitService();
+                var page = new BloodUnitPage(bloodUnitService, _currentUser );
                 page.Dock = DockStyle.Fill;
                 pnlContent.Controls.Add(page);
                 return;
@@ -628,6 +636,15 @@ namespace BloodLink.Forms
             base.OnResize(e);
             if (pnlSidebar != null)
                 pnlSidebar.Height = this.ClientSize.Height;
+        }
+
+        private void CheckAndExpireUnits()
+        {
+            _unitService.CheckAndExpireUnits();
+            Timer expiryTimer = new Timer();
+            expiryTimer.Interval = 60 * 60 * 1000;
+            expiryTimer.Tick += (s, e) => _unitService.CheckAndExpireUnits();
+            expiryTimer.Start();
         }
     }
 }

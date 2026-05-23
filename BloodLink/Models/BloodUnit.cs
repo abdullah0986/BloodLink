@@ -4,17 +4,17 @@ namespace BloodLink.Models
 {
     public class BloodUnit
     {
-        public int Id { get; set; }
-        public string BagId { get; set; }
-        public BloodGroup BloodGroup { get; set; }
+        public string Id { get; set; }
+        public BloodGroup? BloodGroup { get; set; }
         public DateTime CollectedDate { get; set; }
         public DateTime ExpiryDate { get; set; }
-        public int DonorId { get; set; }
-        public BloodUnitStatus Status { get; set; } = BloodUnitStatus.Available;
+        public string DonorId { get; set; }
+        public BloodUnitStatus? Status { get; set; } = BloodUnitStatus.Available;
         public string Notes { get; set; }
+        public string UserId { get; set; }
         public DateTime CreatedAt { get; set; }
 
-        public static string GenerateBagId(string bloodGroup)
+        public static string GenerateBloodUnitId(string bloodGroup)
         {
             string year = DateTime.UtcNow.Year.ToString();
 

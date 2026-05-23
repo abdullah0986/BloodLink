@@ -11,40 +11,112 @@ namespace BloodLink.Services
         {
             _donorRepo = new DonorRepository();
         }
-        public (bool success, string message, int donorId) RegisterDonor(Donor donor)
+        public bool RegisterDonor(Donor donor)
         {
             if (donor == null)
-                return (false, "Invalid donor data.", -1);
+            {
+                MessageBox.Show("Donor information is required.");
+                return false;
+            }
 
             if (string.IsNullOrWhiteSpace(donor.FullName))
-                return (false, "Full name is required.", -1);
+            {
+                MessageBox.Show("Full Name is required");
+                return false;
+            }
 
             if (string.IsNullOrWhiteSpace(donor.Phone))
-                return (false, "Phone number is required.", -1);
+            {
+                MessageBox.Show("Phone number is required.");
+                return false;
+            }
 
             if (string.IsNullOrWhiteSpace(donor.City))
-                return (false, "City is required.", -1);
-
-            if (donor.UserId.HasValue)
             {
-                var existing = _donorRepo.GetDonorByUserId(donor.UserId.Value);
-                if (existing != null && existing.Id != donor.Id)
-                    return (false, "A donor profile already exists for this account.", -1);
+                MessageBox.Show("City is required.");
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(donor.UserId))
+            {
+                MessageBox.Show("User ID is not found.");
+                return false;
+            }
+
+            string generatedId = donor.generateDonorId();
+            donor.Id = generatedId;
+            donor.FullName = donor.FullName.Trim();
+            donor.City = donor.City.Trim();
+            donor.Area = donor.Area?.Trim();
+            donor.CreatedAt = donor.CreatedAt == default ? DateTime.Now : donor.CreatedAt;
+            if (donor.LastDonationDate.HasValue)
+                donor.NextEligibleDate = donor.LastDonationDate.Value.AddDays(120);
+            int id = _donorRepo.AddDonor(donor);
+            if (id <= 0)
+                return false;
+
+            return id > 0;
+        }
+
+        public bool UpdateDonor(Donor donor)
+        {
+            if (donor == null)
+            {
+                MessageBox.Show("Donor information is required.");
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(donor.FullName))
+            {
+                MessageBox.Show("Full Name is required");
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(donor.Phone))
+            {
+                MessageBox.Show("Phone number is required.");
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(donor.City))
+            {
+                MessageBox.Show("City is required.");
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(donor.UserId))
+            {
+                MessageBox.Show("User ID is not found.");
+                return false;
             }
 
             donor.FullName = donor.FullName.Trim();
             donor.City = donor.City.Trim();
             donor.Area = donor.Area?.Trim();
-            donor.IsEligible = true;
-            donor.CreatedAt = donor.CreatedAt == default ? DateTime.Now : donor.CreatedAt;
             if (donor.LastDonationDate.HasValue)
                 donor.NextEligibleDate = donor.LastDonationDate.Value.AddDays(90);
-            int id = _donorRepo.AddDonor(donor);
-            if (id <= 0)
-                return (false, "Failed to save donor. See logs.", -1);
 
-            return (true, "Donor registered.", id);
+            bool success = _donorRepo.UpdateDonor(donor);
+
+            if (!success)
+                return false;
+            
+
+            return true;
         }
+
+        public bool DeleteDonor(string donorId)
+        {
+            if (string.IsNullOrEmpty(donorId))
+            {
+                MessageBox.Show("Invalid donor ID.");
+                return false;
+            }
+            bool success = _donorRepo.DeleteDonor(donorId);
+            if (!success)
+                MessageBox.Show("Failed to delete donor. Please try again.");
+            return success;
+        }   
 
 
         public DonorStats GetDashboardStats()

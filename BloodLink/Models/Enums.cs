@@ -26,9 +26,8 @@ namespace BloodLink.Models
 
     public enum Gender
     {
-        [Description("Male")] Male,
-        [Description("Female")] Female,
-        [Description("Other")] Other
+        Male,
+        Female,
     }
 
     public enum BloodUnitStatus
@@ -41,14 +40,21 @@ namespace BloodLink.Models
 
     public enum RequestStatus
     {
-        [Description("Pending")] Pending,
-        [Description("Fulfilled")] Fulfilled,
-        [Description("Cancelled")] Cancelled
+        Pending,
+        Fulfilled,
+        Cancelled
     }
 
     public enum DonorEligibility
     {
         [Description("Not Eligible")] NotEligible,
         [Description("Eligible")] Eligible
+    }
+
+    public enum FormMode
+    {
+        Add, 
+        Edit, 
+        View
     }
 }

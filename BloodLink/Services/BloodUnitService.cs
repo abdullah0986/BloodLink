@@ -1,5 +1,6 @@
 ﻿using BloodLink.Database;
 using BloodLink.Helpers;
+using BloodLink.Interfaces;
 using BloodLink.Models;
 using System;
 using System.Collections.Generic;
@@ -9,49 +10,102 @@ namespace BloodLink.Services
 {
     public class BloodUnitService
     {
-        private readonly BloodUnitRepository _bloodUnitRepository;
+        private readonly IBloodUnitRepository _bloodUnitRepository;
 
         public BloodUnitService()
         {
             _bloodUnitRepository = new BloodUnitRepository();
         }
 
-        public (bool success, string message, int bloodUnitId) AddBloodUnit(BloodUnit unit)
+        public bool AddBloodUnit(BloodUnit unit)
         {
             if (unit == null)
             {
-                return (false, "Blood unit cannot be null.", 0);
+                return false;
             }
             if (!Enum.IsDefined(typeof(BloodGroup), unit.BloodGroup))
             {
-                return (false, "Blood group is required.", 0);
+                return false;
             }
-            if (unit.DonorId == 0)
+            if (unit.DonorId == null || unit.UserId == null)
             {
-                return (false, "Donor ID is required.", 0);
+                return false;
             }
             if (!Enum.IsDefined(typeof(BloodUnitStatus), unit.Status))
             {
-                return (false, "Blood unit status is required.", 0);
+                return false;
             }
             if (string.IsNullOrWhiteSpace(unit.CollectedDate.ToString()))
             {
-                return (false, "Collected date is required.", 0);
+                return false;
             }
-            unit.BagId = BloodUnit.GenerateBagId(EnumHelper.GetDescription(unit.BloodGroup));
             unit.CreatedAt = DateTime.UtcNow;
-            unit.ExpiryDate = unit.CreatedAt.AddDays(35);
+            unit.ExpiryDate = unit.CollectedDate.AddDays(35);
 
             int confirm = _bloodUnitRepository.AddBloodUnit(unit);
             if (confirm > 0)
-                return (true, "Blood unit added.", _bloodUnitRepository.AddBloodUnit(unit));
+                return true;
             else
-                return (false, "Failed to add blood unit.", 0);
+                return false;
         }
 
-        public int GetTotalBloodUnits()
+        public bool UpdateBloodUnit(BloodUnit unit)
         {
-            return _bloodUnitRepository.getTotalBloodUnits();
+            if (unit == null || string.IsNullOrWhiteSpace(unit.Id))
+            {
+                return false;
+            }
+            if (!Enum.IsDefined(typeof(BloodGroup), unit.BloodGroup))
+            {
+                return false;
+            }
+            if (unit.DonorId == null || unit.UserId == null)
+            {
+                return false;
+            }
+            if (!Enum.IsDefined(typeof(BloodUnitStatus), unit.Status))
+            {
+                return false;
+            }
+            if (string.IsNullOrWhiteSpace(unit.CollectedDate.ToString()))
+            {
+                return false;
+            }
+
+            unit.ExpiryDate = unit.CollectedDate.AddDays(35);
+            int confirm = _bloodUnitRepository.UpdateBloodUnit(unit);
+            if (confirm > 0)
+                return true;
+            else
+                return false;
+        }
+
+        public bool DeleteBloodUnit(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return false;
+            }
+            int confirm = _bloodUnitRepository.DeleteBloodUnit(id);
+            if (confirm > 0)
+                return true;
+            else
+                return false;
+        }
+
+        public List<BloodUnit> GetAllUnits()
+        {
+            return _bloodUnitRepository.GetAllBloodUnits();
+        }
+
+        public List<BloodUnit> SearchUnits(BloodGroup? bg, BloodUnitStatus? status)
+        {
+            return _bloodUnitRepository.SearchBloodUnits(bg, status);
+        }
+
+        public BloodUnitStats GetBloodUnitStats()
+        {
+            return _bloodUnitRepository.GetBloodUnitStats();
         }
 
         public int getBloodGroupCount(Enum BloodGroup)
@@ -71,6 +125,11 @@ namespace BloodLink.Services
         public Dictionary<string, int> getExpiringUnits()
         {
             return _bloodUnitRepository.getExpiringUnits();
+        }
+
+        public void CheckAndExpireUnits()
+        {
+            _bloodUnitRepository.MarkExpiredUnits();
         }
     }
 }

@@ -22,38 +22,27 @@ namespace BloodLink.Forms
             txtPassword.Text = "Admin@123";
         # endif
         }
-
-        // ─────────────────────────────────────────────────
-        // THEME — applies colors from AppTheme to controls
-        // Called once on load, called again on theme toggle
-        // ─────────────────────────────────────────────────
         private void ApplyTheme()
         {
-            // ── Form ───────────────────────────────────
             this.BackColor = AppTheme.Background;
 
-            // ── Left panel — gradient ──────────────────
             pnlLeft.BackColor = AppTheme.GradientStart;
-            pnlLeft.Paint -= LeftPanel_Paint; // remove old handler first
+            pnlLeft.Paint -= LeftPanel_Paint; 
             pnlLeft.Paint += LeftPanel_Paint;
 
-            // ── Right panel ────────────────────────────
             pnlRight.BackColor = AppTheme.CardBackground;
 
-            // ── Labels ─────────────────────────────────
             lblWelcome.ForeColor = AppTheme.PrimaryText;
             lblSubtitle.ForeColor = AppTheme.MutedText;
             lblEmail.ForeColor = AppTheme.BodyText;
             lblPassword.ForeColor = AppTheme.BodyText;
             lblError.ForeColor = AppTheme.ErrorRed;
 
-            // ── Inputs ─────────────────────────────────
             txtEmail.BackColor = AppTheme.Surface;
             txtEmail.ForeColor = AppTheme.PrimaryText;
             txtPassword.BackColor = AppTheme.Surface;
             txtPassword.ForeColor = AppTheme.PrimaryText;
 
-            // ── Button ─────────────────────────────────
             btnLogin.BackColor = AppTheme.PrimaryRed;
             btnLogin.ForeColor = AppTheme.White;
             btnLogin.FlatAppearance.BorderSize = 0;
@@ -62,10 +51,6 @@ namespace BloodLink.Forms
             btnLogin.MouseEnter += BtnLogin_MouseEnter;
             btnLogin.MouseLeave += BtnLogin_MouseLeave;
         }
-
-        // ─────────────────────────────────────────────────
-        // PAINT EVENTS
-        // ─────────────────────────────────────────────────
         private void LeftPanel_Paint(object sender, PaintEventArgs e)
         {
             using var brush = new LinearGradientBrush(
@@ -77,9 +62,6 @@ namespace BloodLink.Forms
             e.Graphics.FillRectangle(brush, pnlLeft.ClientRectangle);
         }
 
-        // ─────────────────────────────────────────────────
-        // EVENT HANDLERS
-        // ─────────────────────────────────────────────────
         private void BtnLogin_MouseEnter(object sender, EventArgs e)
             => btnLogin.BackColor = AppTheme.BrightRed;
 

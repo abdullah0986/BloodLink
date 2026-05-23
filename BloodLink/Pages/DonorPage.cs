@@ -1,4 +1,4 @@
-﻿using BloodLink.Helpers;
+﻿using BloodLink.Forms;
 using BloodLink.Helpers;
 using BloodLink.Models;
 using BloodLink.Services;
@@ -12,11 +12,14 @@ namespace BloodLink.Pages
     {
 
         private DonorService _DonorService;
-        public DonorPage()
+        private readonly User _currentUser;
+        private PaintHelper _paintHelper = new PaintHelper();
+        public DonorPage(DonorService _service, User user)
         {
             InitializeComponent();
             applyTheme();
-            _DonorService = new DonorService();
+            _DonorService = _service;
+            _currentUser = user;
             this.HandleCreated += DonorPage_HandleCreated;
             dgvDonors.SelectionChanged += dgvDonors_SelectionChanged;
         }
@@ -24,7 +27,7 @@ namespace BloodLink.Pages
         private void applyTheme()
         {
             pnlTextBoxDonorSearch.BackColor = AppTheme.ContentBackground;
-            AddRounding(pnlTextBoxDonorSearch);
+            _paintHelper.AddRounding(pnlTextBoxDonorSearch);
 
             tbSearchDonor.BackColor = AppTheme.ContentBackground;
             tbSearchDonor.Font = AppTheme.FontSmall;
@@ -34,21 +37,40 @@ namespace BloodLink.Pages
             cbBloodGroups.ForeColor = AppTheme.PrimaryText;
             cbBloodGroups.Font = AppTheme.FontSmall;
             cbBloodGroups.TabStop = false;
-            cbBloodGroups.DrawItem += cbStyling_DrawItem;
+            cbBloodGroups.DrawItem += _paintHelper.cbStyling_DrawItem!;
 
             cbStatus.BackColor = AppTheme.ContentBackground;
             cbStatus.ForeColor = AppTheme.PrimaryText;
             cbStatus.Font = AppTheme.FontSmall;
             cbStatus.TabStop = false;
-            cbStatus.DrawItem += cbStyling_DrawItem;
+            cbStatus.DrawItem += _paintHelper.cbStyling_DrawItem!;
 
             btnAddDonor.BackColor = AppTheme.PrimaryRed;
             btnAddDonor.ForeColor = AppTheme.PrimaryText;
             btnAddDonor.FlatAppearance.BorderColor = AppTheme.PrimaryRed;
             btnAddDonor.Font = AppTheme.FontSmall;
+            _paintHelper.AddRounding(btnAddDonor, 4);
+
+            btnUpdate.BackColor = AppTheme.PrimaryRed;
+            btnUpdate.ForeColor = AppTheme.PrimaryText;
+            btnUpdate.FlatAppearance.BorderColor = AppTheme.PrimaryRed;
+            btnUpdate.Font = AppTheme.FontSmall;
+            _paintHelper.AddRounding(btnUpdate, 4);
+
+            btnView.BackColor = AppTheme.PrimaryRed;
+            btnView.ForeColor = AppTheme.PrimaryText;
+            btnView.FlatAppearance.BorderColor = AppTheme.PrimaryRed;
+            btnView.Font = AppTheme.FontSmall;
+            _paintHelper.AddRounding(btnView, 4);
+
+            btnDelete.BackColor = AppTheme.PrimaryRed;
+            btnDelete.ForeColor = AppTheme.PrimaryText;
+            btnDelete.FlatAppearance.BorderColor = AppTheme.PrimaryRed;
+            btnDelete.Font = AppTheme.FontSmall;
+            _paintHelper.AddRounding(btnDelete, 4);
 
             pnlDgvDonorsStyling.BackColor = AppTheme.ContentBackground;
-            AddRounding(pnlDgvDonorsStyling);
+            _paintHelper.AddRounding(pnlDgvDonorsStyling);
 
             dgvDonors.BackgroundColor = AppTheme.ContentBackground;
             dgvDonors.GridColor = AppTheme.CardBackground;
@@ -61,8 +83,8 @@ namespace BloodLink.Pages
             dgvDonors.DefaultCellStyle.Font = AppTheme.FontSmall;
             dgvDonors.DefaultCellStyle.SelectionBackColor = AppTheme.SurfaceHover;
             dgvDonors.DefaultCellStyle.SelectionForeColor = AppTheme.PrimaryText;
-            dgvDonors.Paint -= DgvHeaderLine_Paint;
-            dgvDonors.Paint += DgvHeaderLine_Paint;
+            dgvDonors.Paint -= PaintHelper.DgvHeaderLine_Paint;
+            dgvDonors.Paint += PaintHelper.DgvHeaderLine_Paint;
 
         }
 
@@ -91,6 +113,12 @@ namespace BloodLink.Pages
             if (!_allowSelection)
             {
                 dgvDonors.ClearSelection();
+                return;
+            }
+
+            if (dgvDonors.SelectedRows.Count > 0 && dgvDonors.SelectedRows[0].Index == 0)
+            {
+                dgvDonors.ClearSelection();
             }
         }
 
@@ -104,7 +132,7 @@ namespace BloodLink.Pages
             List<Donor> donors = _DonorService.GetAllDonors();
             foreach (Donor donor in donors)
             {
-                dgvDonors.Rows.Add(
+                int rowIndex = dgvDonors.Rows.Add(
                     donor.FullName,
                     EnumHelper.GetDescription(donor.BloodGroup),
                     donor.Phone,
@@ -112,17 +140,19 @@ namespace BloodLink.Pages
                     donor.LastDonationDate.HasValue ? donor.LastDonationDate.Value.ToString("yyyy-MM-dd") : "N/A",
                     donor.IsEligible ? "Yes" : "No"
                 );
+
+                dgvDonors.Rows[rowIndex].Tag = donor;
             }
             dgvDonors.CellFormatting += dgvDonors_CellFormatting;
 
             UpdateGridHeight();
-            dgvDonors.Paint -= DgvHeaderLine_Paint;
-            dgvDonors.Paint += DgvHeaderLine_Paint;
+            dgvDonors.Paint -= PaintHelper.DgvHeaderLine_Paint;
+            dgvDonors.Paint += PaintHelper.DgvHeaderLine_Paint;
             dgvDonors.RowsAdded += (s, e) => UpdateGridHeight();
 
             populateBloodGroups();
             populateStatus();
-            AddClickEventToAllControls(this);
+            _paintHelper.AddClickEventToAllControls(this, dgvDonors);
         }
 
         private void populateBloodGroups()
@@ -174,64 +204,6 @@ namespace BloodLink.Pages
             }
         }
 
-        private void DgvHeaderLine_Paint(object? sender, PaintEventArgs e)
-        {
-            if (sender is DataGridView dgv)
-            {
-                int y = dgv.ColumnHeadersHeight + 1;
-                using var pen = new Pen(Color.FromArgb(160, AppTheme.BorderColor), 2f);
-                e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
-                e.Graphics.DrawLine(pen, new Point(0, y), new Point(dgv.ClientSize.Width, y));
-            }
-        }
-
-        public void AddRounding(Panel panel)
-        {
-            panel.Paint -= PnlRounding_Paint;
-            panel.Paint += PnlRounding_Paint;
-            panel.Resize -= PnlResize;
-            panel.Resize += PnlResize;
-        }
-
-        private void PnlResize(object sender, EventArgs e)
-        {
-            ((Panel)sender).Invalidate();
-        }
-
-
-        private void PnlRounding_Paint(object sender, PaintEventArgs e)
-        {
-            Panel pnl = (Panel)sender;
-            if (pnl.Width <= 0 || pnl.Height <= 0) return;
-
-            Graphics g = e.Graphics;
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-
-            Rectangle rect = new Rectangle(0, 0, pnl.Width, pnl.Height);
-            using GraphicsPath path = GetRoundedPath(rect, 6);
-
-            pnl.Region = new Region(path);
-
-            using SolidBrush bg = new SolidBrush(pnl.BackColor);
-            g.FillPath(bg, path);
-
-            Rectangle borderRect = new Rectangle(0, 0, pnl.Width - 1, pnl.Height - 1);
-            using GraphicsPath borderPath = GetRoundedPath(borderRect, 12);
-            using Pen borderPen = new Pen(AppTheme.BorderColor, 1);
-            g.DrawPath(borderPen, borderPath);
-        }
-
-        private GraphicsPath GetRoundedPath(Rectangle bounds, int radius)
-        {
-            int d = radius * 2;
-            GraphicsPath path = new GraphicsPath();
-            path.AddArc(bounds.X, bounds.Y, d, d, 180, 90);
-            path.AddArc(bounds.Right - d, bounds.Y, d, d, 270, 90);
-            path.AddArc(bounds.Right - d, bounds.Bottom - d, d, d, 0, 90);
-            path.AddArc(bounds.X, bounds.Bottom - d, d, d, 90, 90);
-            path.CloseAllFigures();
-            return path;
-        }
 
         private void UpdateGridHeight()
         {
@@ -243,48 +215,8 @@ namespace BloodLink.Pages
                     totalHeight += row.Height;
             }
 
-            totalHeight += 2;
+            totalHeight += 26;
             dgvDonors.Height = totalHeight;
-        }
-
-        private void cbStyling_DrawItem(object sender, DrawItemEventArgs e)
-        {
-            if (e.Index < 0) return;
-
-            ComboBox combo = sender as ComboBox;
-            bool isSelected = (e.State & DrawItemState.Selected) == DrawItemState.Selected;
-
-            Color bgColor = isSelected ? AppTheme.SurfaceHover : AppTheme.ContentBackground;
-            Color textColor = isSelected ? AppTheme.PrimaryText : AppTheme.BodyText;
-
-            using (SolidBrush sb = new SolidBrush(bgColor))
-            {
-                e.Graphics.FillRectangle(sb, e.Bounds);
-            }
-
-            string text = combo.GetItemText(combo.Items[e.Index]);
-            TextRenderer.DrawText(e.Graphics, text, combo.Font, e.Bounds, textColor,
-                TextFormatFlags.Left | TextFormatFlags.VerticalCenter);
-        }
-
-        private void AddClickEventToAllControls(Control parent)
-        {
-            foreach (Control ctrl in parent.Controls)
-            {
-                if (ctrl != dgvDonors)
-                {
-                    ctrl.Click += (s, e) =>
-                    {
-                        dgvDonors.ClearSelection();
-                    };
-                }
-
-                // Recursive call for nested controls 
-                if (ctrl.HasChildren)
-                {
-                    AddClickEventToAllControls(ctrl);
-                }
-            }
         }
 
         private void tbSearchDonor_TextChanged(object sender, EventArgs e)
@@ -306,25 +238,122 @@ namespace BloodLink.Pages
         private void ApplyFilters()
         {
             string search = tbSearchDonor.Text;
-
             BloodGroup? selectedGroup = cbBloodGroups.SelectedValue as BloodGroup?;
             DonorEligibility? selectedStatus = cbStatus.SelectedValue as DonorEligibility?;
 
             var donors = _DonorService.SerachDonors(search, selectedGroup, selectedStatus);
 
             dgvDonors.Rows.Clear();
+            InsertSpacerRow();
 
             foreach (Donor donor in donors)
             {
-                dgvDonors.Rows.Add(
+                int rowIndex = dgvDonors.Rows.Add(
                     donor.FullName,
                     EnumHelper.GetDescription(donor.BloodGroup),
                     donor.Phone,
                     donor.City,
-                    donor.LastDonationDate.HasValue ? donor.LastDonationDate.Value.ToString("yyyy-MM-dd") : "N/A",
+                    donor.LastDonationDate.HasValue ? donor.LastDonationDate.Value.ToString("dd-MM-yyyy") : "N/A",
                     donor.IsEligible ? "Yes" : "No"
                 );
+
+                dgvDonors.Rows[rowIndex].Tag = donor;
             }
+
+            UpdateGridHeight();
+        }
+
+        private void InsertSpacerRow()
+        {
+            dgvDonors.Rows.Insert(0, "", "", "", "", "", "", "");
+            dgvDonors.Rows[0].Height = 10;
+            dgvDonors.Rows[0].DefaultCellStyle.BackColor = AppTheme.ContentBackground;
+            dgvDonors.Rows[0].ReadOnly = true;
+        }
+
+        private void btnAddDonor_Click(object sender, EventArgs e)
+        {
+            using var form = new DonorForm(_DonorService, _currentUser);
+            DialogResult result = form.ShowDialog();
+            if (result == DialogResult.OK)
+            {
+                loadData();
+            }
+        }
+
+        private void btnView_Click(object sender, EventArgs e)
+        {
+            if (dgvDonors.SelectedRows.Count == 0)
+            {
+                MessageBox.Show("Please select a donor to view.");
+                return;
+            }
+
+            var donor = dgvDonors.SelectedRows[0].Tag as Donor;
+
+            if (donor == null)
+            {
+                MessageBox.Show("No donor data found.");
+                return;
+            }
+
+            var form = new DonorForm(_DonorService, _currentUser, FormMode.View, donor);
+            form.ShowDialog();
+        }
+
+        private void btnUpdate_Click(object sender, EventArgs e)
+        {
+            if (dgvDonors.SelectedRows.Count == 0)
+            {
+                MessageBox.Show("Please select a donor to Update.");
+                return;
+            }
+
+            var donor = dgvDonors.SelectedRows[0].Tag as Donor;
+
+            if (donor == null)
+            {
+                MessageBox.Show("No donor data found.");
+                return;
+            }
+
+            var form = new DonorForm(_DonorService, _currentUser, FormMode.Edit, donor);
+            var result = form.ShowDialog();
+            if (result == DialogResult.OK)
+            {
+                loadData();
+            }
+        }
+
+        private void btnDelete_Click(object sender, EventArgs e)
+        {
+            if (dgvDonors.SelectedRows.Count == 0)
+            {
+                MessageBox.Show("Please select a donor to Delete.");
+                return;
+            }
+
+            var donor = dgvDonors.SelectedRows[0].Tag as Donor;
+
+            if (donor == null)
+            {
+                MessageBox.Show("No donor data found.");
+                return;
+            }
+
+
+            DialogResult result = MessageBox.Show($"Sure you want to delete {donor.FullName}", "Deleting Donor", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            if (result == DialogResult.Yes)
+            {
+                _DonorService.DeleteDonor(donor.Id);
+                loadData();
+            }
+
+        }
+
+        private void pnlDgvDonorsStyling_Paint(object sender, PaintEventArgs e)
+        {
+
         }
     }
 }

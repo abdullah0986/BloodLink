@@ -21,39 +21,31 @@ namespace BloodLink.Pages
         private void ApplyTheme()
         {
             this.BackColor = AppTheme.MainBackground;
-            tblDashboard.BackColor = AppTheme.MainBackground;
-            tblFirstRow.BackColor = AppTheme.MainBackground;
-            tblSecondRow.BackColor = AppTheme.MainBackground;
 
-            // Stat card Total Donors
             StyleStatCard(
                 pnlTotalDonor, pbDonorIcon,
                 lblTotalDonor, lblTotalDonorCount, lblTotalDonorInfo,
                 AppTheme.TotalDonorIconColor
             );
 
-            // ── Stat card 2 — Blood Units ──────────────
             StyleStatCard(
                 pnlBloodUnits, pbBloodUnits,
                 lblBloodUnits, lblBloodUnitsCount, lblBloodUnitsInfo,
                 AppTheme.BloodUnitsIconColor
             );
 
-            // ── Stat card 3 — Patients Today ───────────
             StyleStatCard(
                 pnlPatientToday, pbPatientsToday,
                 lblPatientToday, lblPatientTodayCount, lblPatientTodayInfo,
                 AppTheme.PatientsTodayIconColor
             );
 
-            // ── Stat card 4 — Expiring Soon ────────────
             StyleStatCard(
                 pnlExpiringSoon, pbExpiringSoon,
                 lblExpiringSoon, lblExpiringSoonCount, lblExpiringSoonInfo,
                 AppTheme.ExpiringSoonIconColor
             );
 
-            // ── Blood breakdown card ───────────────────
             pnlBloodBreakdown.BackColor = AppTheme.ContentBackground;
             tblBloodBreakdown.BackColor = AppTheme.ContentBackground;
             lblBloodBreakdown.ForeColor = AppTheme.PrimaryText;
@@ -62,7 +54,6 @@ namespace BloodLink.Pages
 
             StyleBloodChips();
 
-            // ── Expiring units card
             panel1.BackColor = AppTheme.ContentBackground;
             panel1.BorderStyle = BorderStyle.None;
             lblExpiringUnits.ForeColor = AppTheme.PrimaryText;
@@ -79,7 +70,6 @@ namespace BloodLink.Pages
             dgvExpiringUnits.CurrentCell = null;
             dgvExpiringUnits.ClearSelection();
 
-            // ── Patient requests card ──────────────────
             pnlPatientRequests.BackColor = AppTheme.ContentBackground;
             lblPatientRequests.ForeColor = AppTheme.PrimaryText;
             lblPatientRequests.Font = AppTheme.FontButton;
@@ -161,9 +151,6 @@ namespace BloodLink.Pages
             countLabel.Anchor = AnchorStyles.None;
         }
 
-        // ─────────────────────────────────────────────────
-        // DUMMY DATA
-        // ─────────────────────────────────────────────────
         private void loadData()
         {
             var donorService = new DonorService();
@@ -171,8 +158,8 @@ namespace BloodLink.Pages
             lblTotalDonorCount.Text = stats != null ? stats.TotalDonors.ToString() : "0";
 
             var bloodUnitService = new BloodUnitService();
-            int totalBloodUnits = bloodUnitService.GetTotalBloodUnits();
-            lblBloodUnitsCount.Text = totalBloodUnits.ToString() ?? "0";
+            var bloodUnitStats = bloodUnitService.GetBloodUnitStats();
+            lblBloodUnitsCount.Text = bloodUnitStats.TotalUnits.ToString() ?? "0";
 
             var patientRequestService = new PatientRequestService();
             int totalPatientToday = patientRequestService.GetAllPatientInDay();
