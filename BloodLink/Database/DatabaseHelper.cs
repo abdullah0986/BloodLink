@@ -85,8 +85,9 @@ CREATE TABLE IF NOT EXISTS PatientRequests (
     DoctorName TEXT,
     Status TEXT NOT NULL DEFAULT 'Pending',
     Notes TEXT,
-    RequestDate TEXT NOT NULL,
-    CreatedAt TEXT NOT NULL
+    UserId TEXT,
+    CreatedAt TEXT NOT NULL,
+    FOREIGN KEY (UserId) REFERENCES Users(Id)
 );
 
 CREATE TABLE IF NOT EXISTS BloodIssuances (
@@ -189,10 +190,10 @@ VALUES
 
             string sql = @"
 INSERT INTO PatientRequests 
-(Id, PatientName, PatientAge, BloodGroup, UnitsRequired, Ward, DoctorName, Status, RequestDate, CreatedAt)
+(Id, PatientName, PatientAge, BloodGroup, UnitsRequired, Ward, DoctorName, Status, CreatedAt)
 VALUES
-(@id1, 'Ahmed Raza', '45', 'A+', 2, 'Ward 1', 'Dr. Khan', 'Pending', @now, @now),
-(@id2, 'Fatima Noor', '30', 'B+', 1, 'Ward 2', 'Dr. Ali', 'Pending', @now, @now);
+(@id1, 'Ahmed Raza', '45', 'A+', 2, 'Ward 1', 'Dr. Khan', 'Pending', @now),
+(@id2, 'Fatima Noor', '30', 'B+', 1, 'Ward 2', 'Dr. Ali', 'Pending', @now);
 ";
 
             using var cmd = new SqliteCommand(sql, connection);

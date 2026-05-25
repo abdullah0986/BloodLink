@@ -127,6 +127,16 @@ namespace BloodLink.Services
             return _bloodUnitRepository.getExpiringUnits();
         }
 
+        public Dictionary<string, int> GetStockByBloodGroup()
+        {
+            return _bloodUnitRepository.GetStockByBloodGroup();
+        }
+
+        public Dictionary<string, int> GetMonthlyDonations(int monthsBack = 6)
+        {
+            return _bloodUnitRepository.GetMonthlyDonations(monthsBack);
+        }
+
         public void CheckAndExpireUnits()
         {
             _bloodUnitRepository.MarkExpiredUnits();

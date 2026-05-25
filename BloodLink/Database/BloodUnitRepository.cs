@@ -162,8 +162,14 @@ namespace BloodLink.Database
 
                 using (SqliteCommand cmd = new SqliteCommand("SELECT COUNT(*) FROM BloodUnits WHERE Status == 'Reserved'", connection))
                     stats.ReservedUnits = Convert.ToInt32(cmd.ExecuteScalar());
+                using (SqliteCommand cmd = new SqliteCommand(
+                    "SELECT COUNT(*) FROM BloodUnits WHERE Status = 'Used' AND strftime('%Y-%m', CollectedDate) = strftime('%Y-%m', 'now')",
+                    connection))
+                    stats.UsedUnits = Convert.ToInt32(cmd.ExecuteScalar());
 
-                using (SqliteCommand cmd = new SqliteCommand("SELECT COUNT(*) FROM BloodUnits WHERE Status == 'Expired'", connection))
+                using (SqliteCommand cmd = new SqliteCommand(
+                    "SELECT COUNT(*) FROM BloodUnits WHERE Status = 'Expired' AND strftime('%Y-%m', CollectedDate) = strftime('%Y-%m', 'now')",
+                    connection))
                     stats.ExpiredUnits = Convert.ToInt32(cmd.ExecuteScalar());
 
             }
@@ -249,22 +255,64 @@ namespace BloodLink.Database
             return expiringUnits;
         }
 
-        private BloodUnit MapBloodUnit(SqliteDataReader reader)
+        Dictionary<string, int> IBloodUnitRepository.GetStockByBloodGroup()
         {
-            return new BloodUnit
+            Dictionary<string, int> _result = new Dictionary<string, int>();
+
+            try
             {
-                Id = reader["Id"].ToString()!,
-                BloodGroup = EnumHelper.GetValueFromDescription<BloodGroup>(reader["BloodGroup"]?.ToString() ?? string.Empty),
-                CollectedDate = DateTime.Parse(reader["CollectedDate"].ToString() ?? string.Empty),
-                ExpiryDate = DateTime.Parse(reader["ExpiryDate"].ToString() ?? string.Empty),
-                DonorId = reader["DonorId"].ToString()!,
-                Status = EnumHelper.GetValueFromDescription<BloodUnitStatus>(reader["Status"]?.ToString() ?? string.Empty),
-                UserId = reader["UserId"].ToString()!,
-                Notes = reader["Notes"]?.ToString()!,
-                CreatedAt = DateTime.Parse(reader["CreatedAt"].ToString() ?? string.Empty)
-            };
+                using SqliteConnection conn = DatabaseHelper.GetConnection();
+                string sql = @"SELECT BloodGroup, COUNT(*) as Count FROM BloodUnits
+                                WHERE Status = 'Available' GROUP BY BloodGroup;";
+
+                SqliteCommand cmd = new SqliteCommand(sql, conn);
+                SqliteDataReader reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    string group = reader["BloodGroup"]?.ToString() ?? string.Empty;
+                    int count = Convert.ToInt32(reader["Count"]);
+
+                    if (!string.IsNullOrEmpty(group))
+                        _result[group] = count;
+                }
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine($"Error while getting blood group stocks. ${ex.Message}"); ;
+                throw;
+            }
+            return _result;
         }
 
+        Dictionary<string, int> IBloodUnitRepository.GetMonthlyDonations(int monthsBack)
+        {
+            var result = new Dictionary<string, int>();
+            try
+            {
+                using var connection = DatabaseHelper.GetConnection();
+                string sql = @"SELECT strftime('%Y-%m', CollectedDate) as Month, COUNT(*) as Count
+                                FROM BloodUnits
+                                WHERE CollectedDate >= @startDate
+                                GROUP BY Month
+                                ORDER BY Month ASC";
+                using var command = new SqliteCommand(sql, connection);
+                command.Parameters.AddWithValue("@startDate",
+                    DateTime.UtcNow.AddMonths(-monthsBack).ToString("yyyy-MM-dd HH:mm:ss"));
+                using var reader = command.ExecuteReader();
+                while (reader.Read())
+                {
+                    string month = reader["Month"]?.ToString() ?? string.Empty;
+                    int count = Convert.ToInt32(reader["Count"]);
+                    if (!string.IsNullOrEmpty(month))
+                        result[month] = count;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error fetching monthly donations: {ex.Message}");
+            }
+            return result;
+        }
 
         int IBloodUnitRepository.MarkExpiredUnits()
         {
@@ -279,11 +327,27 @@ namespace BloodLink.Database
                 command.Parameters.AddWithValue("@today", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
                 return command.ExecuteNonQuery();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
                 throw;
             }
+        }
+
+        private BloodUnit MapBloodUnit(SqliteDataReader reader)
+        {
+            return new BloodUnit
+            {
+                Id = reader["Id"].ToString()!,
+                BloodGroup = EnumHelper.GetValueFromDescription<BloodGroup>(reader["BloodGroup"]?.ToString() ?? string.Empty),
+                CollectedDate = DateTime.Parse(reader["CollectedDate"].ToString() ?? string.Empty),
+                ExpiryDate = DateTime.Parse(reader["ExpiryDate"].ToString() ?? string.Empty),
+                DonorId = reader["DonorId"].ToString()!,
+                Status = EnumHelper.GetValueFromDescription<BloodUnitStatus>(reader["Status"]?.ToString() ?? string.Empty),
+                UserId = reader["UserId"].ToString()!,
+                Notes = reader["Notes"]?.ToString()!,
+                CreatedAt = DateTime.Parse(reader["CreatedAt"].ToString() ?? string.Empty)
+            };
         }
     }
 }

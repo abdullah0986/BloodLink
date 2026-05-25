@@ -118,5 +118,10 @@ namespace BloodLink.Services
         {
             return _patientRequestRepository.getRecentPatientRequests();
         }
+
+        public Dictionary<string, int> GetRequestStatusStats()
+        {
+            return _patientRequestRepository.GetRequestStatusStats();
+        }
     }
 }

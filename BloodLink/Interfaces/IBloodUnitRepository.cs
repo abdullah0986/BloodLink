@@ -14,6 +14,8 @@ namespace BloodLink.Interfaces
         public List<BloodUnit> SearchBloodUnits(BloodGroup? bloodGroup, BloodUnitStatus? bloodUnitStatus);
         public int getBloodGroupCount(Enum BloodGroup);
         public int getExpiringSoonCount();
+        public Dictionary<string, int> GetStockByBloodGroup();
+        public Dictionary<string, int> GetMonthlyDonations(int monthsBack);
         public Dictionary<string, int> getExpiringUnits();
         public int MarkExpiredUnits();
 

@@ -1,6 +1,7 @@
 ﻿using BloodLink.Helpers;
 using BloodLink.Interfaces;
 using BloodLink.Models;
+using BloodLink.Pages;
 using Microsoft.Data.Sqlite;
 using System;
 using System.Collections.Generic;
@@ -17,19 +18,19 @@ namespace BloodLink.Database
             {
                 using SqliteConnection connection = DatabaseHelper.GetConnection();
                 string sql = @"INSERT INTO PatientRequests 
-                            (Id, PatientName, PatientAge, BloodGroup, UnitsRequired, Ward, DoctorName, Status, Notes, userId, CreatedAt)
-                            Values (@Id, @patientName, @patientAge, @bloodGroup, @unitsRequired, @ward, @doctorName, @status, @notes
+                            (Id, PatientName, PatientAge, BloodGroup, UnitsRequired, Ward, DoctorName, Status, Notes, UserId, CreatedAt)
+                            Values (@id, @patientName, @patientAge, @bloodGroup, @unitsRequired, @ward, @doctorName, @status, @notes
                              , @userId, @createdAt);";
                 SqliteCommand cmd = new SqliteCommand(sql, connection);
-                cmd.Parameters.AddWithValue("@id", PatientRequest.generatePatientRequestId());
+                cmd.Parameters.AddWithValue("@id", patientRequest.Id);
                 cmd.Parameters.AddWithValue("@patientName", patientRequest.PatientName.ToString());
                 cmd.Parameters.AddWithValue("@patientAge", patientRequest.PatientAge);
                 cmd.Parameters.AddWithValue("@bloodGroup", EnumHelper.GetDescription(patientRequest.BloodGroup));
                 cmd.Parameters.AddWithValue("@unitsRequired", patientRequest.UnitsRequired <= 0 ? 0 : patientRequest.UnitsRequired);
-                cmd.Parameters.AddWithValue("@ward", patientRequest.Ward.ToString() ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@ward", (object?)patientRequest.Ward ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@doctorName", patientRequest.DoctorName ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@status", EnumHelper.GetDescription(patientRequest.Status));
-                cmd.Parameters.AddWithValue("@notes", patientRequest.Notes);
+                cmd.Parameters.AddWithValue("@notes", (object?)patientRequest.Notes ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@userId", patientRequest.userId);
                 cmd.Parameters.AddWithValue("@createdAt", patientRequest.CreatedAt);
                 return cmd.ExecuteNonQuery();
@@ -54,18 +55,18 @@ namespace BloodLink.Database
                                 DoctorName = @doctorName, 
                                 Status = @status, 
                                 Notes = @notes, 
-                                userId = @userId
-                               WHERE Id = @Id;";
+                                UserId = @userId
+                               WHERE Id = @id;";
                 SqliteCommand cmd = new SqliteCommand(sql, conn);
                 cmd.Parameters.AddWithValue("@id", patientRequest.Id);
                 cmd.Parameters.AddWithValue("@patientName", patientRequest.PatientName.ToString());
                 cmd.Parameters.AddWithValue("@patientAge", patientRequest.PatientAge);
                 cmd.Parameters.AddWithValue("@bloodGroup", EnumHelper.GetDescription(patientRequest.BloodGroup));
                 cmd.Parameters.AddWithValue("@unitsRequired", patientRequest.UnitsRequired <= 0 ? 0 : patientRequest.UnitsRequired);
-                cmd.Parameters.AddWithValue("@ward", patientRequest.Ward.ToString() ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@ward", (object?)patientRequest.Ward ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@doctorName", patientRequest.DoctorName ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@status", EnumHelper.GetDescription(patientRequest.Status));
-                cmd.Parameters.AddWithValue("@notes", patientRequest.Notes);
+                cmd.Parameters.AddWithValue("@notes", (object?)patientRequest.Notes ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@userId", patientRequest.userId);
                 return cmd.ExecuteNonQuery();
             }
@@ -99,7 +100,7 @@ namespace BloodLink.Database
             try
             {
                 using SqliteConnection conn = DatabaseHelper.GetConnection();
-                string sql = @"SELECT * FROM PatientRequests ORDER BY CreatedAt ASC";
+                string sql = @"SELECT * FROM PatientRequests ORDER BY CreatedAt DESC";
 
                 SqliteCommand cmd = new SqliteCommand(sql, conn);
                 SqliteDataReader reader = cmd.ExecuteReader();
@@ -130,14 +131,14 @@ namespace BloodLink.Database
                 if (rs != null)
                     sql += " AND Status = @status";
 
-                string completeSql = $"SELECT * FROM PatientRequests WHERE {sql} ORDER BY CreatedBy ASC";
+                string completeSql = $"SELECT * FROM PatientRequests WHERE {sql} ORDER BY CreatedAt ASC";
                 SqliteCommand cmd = new SqliteCommand(completeSql, conn);
                 cmd.Parameters.AddWithValue("@searchTerm", $"%{searchTerm.Trim()}%");
 
                 if (bg != null)
-                    cmd.Parameters.AddWithValue("@bloodGroup", bg);
+                    cmd.Parameters.AddWithValue("@bloodGroup", EnumHelper.GetDescription(bg));
                 if (rs != null)
-                    cmd.Parameters.AddWithValue("@status", rs);
+                    cmd.Parameters.AddWithValue("@status", EnumHelper.GetDescription(rs));
 
                 SqliteDataReader reader = cmd.ExecuteReader();
                 while (reader.Read())
@@ -242,6 +243,35 @@ namespace BloodLink.Database
             return requests;
         }
 
+        Dictionary<string, int> IPatientRequestRepository.GetRequestStatusStats()
+        {
+            var result = new Dictionary<string, int>();
+            try
+            {
+                using var connection = DatabaseHelper.GetConnection();
+                string sql = @"
+            SELECT Status, COUNT(*) as Count
+            FROM PatientRequests
+            WHERE strftime('%Y-%m', CreatedAt) = @currentMonth
+            GROUP BY Status";
+                using var command = new SqliteCommand(sql, connection);
+                command.Parameters.AddWithValue("@currentMonth", DateTime.UtcNow.ToString("yyyy-MM"));
+                using var reader = command.ExecuteReader();
+                while (reader.Read())
+                {
+                    string status = reader["Status"]?.ToString() ?? string.Empty;
+                    int count = Convert.ToInt32(reader["Count"]);
+                    if (!string.IsNullOrEmpty(status))
+                        result[status] = count;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error fetching request status stats: {ex.Message}");
+            }
+            return result;
+        }
+
 
         private PatientRequest MapPatientRequest(SqliteDataReader reader)
         {
@@ -249,15 +279,15 @@ namespace BloodLink.Database
             {
                 Id = reader["Id"].ToString()!,
                 PatientName = reader["PatientName"].ToString()!,
-                PatientAge = Convert.ToInt32(reader["PatientAge"]),
+                PatientAge = reader["PatientAge"] == DBNull.Value ? null : Convert.ToInt32(reader["PatientAge"]),
                 BloodGroup = EnumHelper.GetValueFromDescription<BloodGroup>(reader["BloodGroup"]?.ToString() ?? string.Empty),
                 UnitsRequired = Convert.ToInt32(reader["UnitsRequired"]),
                 Ward = reader["Ward"].ToString() ?? "Outsider",
                 DoctorName = reader["DoctorName"].ToString() ?? "N/A",
-                Status = EnumHelper.GetValueFromDescription<RequestStatus>(reader["Status"]?.ToString() ?? string.Empty),
+                Status = Enum.Parse<RequestStatus>(reader["Status"]?.ToString() ?? "Pending"),
                 Notes = reader["Notes"].ToString()!,
                 userId = reader["userId"].ToString()!,
-                CreatedAt = DateTime.Parse(reader["createdAt"].ToString() ?? string.Empty)
+                CreatedAt = DateTime.Parse(reader["CreatedAt"].ToString() ?? string.Empty)
             };
         }
     }

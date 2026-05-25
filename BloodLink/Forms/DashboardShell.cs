@@ -514,6 +514,23 @@ namespace BloodLink.Forms
                 return;
             }
 
+            if(pageName == "Patients")
+            {
+                PatientRequestService patientRequestService = new PatientRequestService();
+                var page = new PatientsPage(patientRequestService, _currentUser);
+                page.Dock = DockStyle.Fill;
+                pnlContent.Controls.Add(page);
+                return;
+            }
+
+            if(pageName == "Reports")
+            {
+                var page = new ReportsPage();
+                page.Dock = DockStyle.Fill;
+                pnlContent.Controls.Add(page);
+                return;
+            }
+
             var placeholder = new Label
             {
                 Text = $"{_pageTitle?.Text} page coming soon...",
