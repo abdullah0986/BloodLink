@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Eventing.Reader;
 using System.Text;
 
-namespace BloodLink.Models
+namespace BloodLink.Core.Models
 {
     public class User
     {

@@ -1,17 +1,21 @@
-﻿using BloodLink.Database;
+﻿using BloodLink.Core.Database;
 using BloodLink.Helpers;
-using BloodLink.Models;
+using BloodLink.Core.Models;
 using BloodLink.Pages;
 using BloodLink.Services;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using Timer =  System.Windows.Forms.Timer;
+using BloodLink.Core.Interfaces;
 
 namespace BloodLink.Forms
 {
     public partial class DashboardShell : Form
     {
         private readonly BloodUnitService _unitService = new BloodUnitService();
+        private readonly IAppSettingRepository _appSettingRepository = new AppSettingsRepository();
+        private readonly Dictionary<Type, UserControl> _views = new Dictionary<Type, UserControl>();
+        private Timer _expiryTimer;
         private readonly LoginForm _loginForm;
         private readonly User _currentUser;
         private Button _activeNavButton;
@@ -475,6 +479,33 @@ namespace BloodLink.Forms
         // ─────────────────────────────────────────────────
         // PAGE LOADING
         // ─────────────────────────────────────────────────
+
+        private void ShowView<T>(Func<T> factory) where T : UserControl
+        {
+            var key = typeof(T);
+
+            if (!_views.TryGetValue(key, out var view))
+            {
+                view = factory();
+                view.Dock = DockStyle.Fill;
+                _views[key] = view;
+            }
+
+            // Remove old views safely from the layout panel
+            while (pnlContent.Controls.Count > 0)
+            {
+                pnlContent.Controls.RemoveAt(0);
+            }
+
+            // Add current view to the panel layout
+            pnlContent.Controls.Add(view);
+
+            // CRITICAL FIX: If the page supports refreshing, force it to reload data right now
+            if (view is IRefreshablePage refreshablePage)
+            {
+                refreshablePage.RefreshPageData();
+            }
+        }
         private void LoadPage(string pageName)
         {
             if (_pageTitle != null)
@@ -492,67 +523,36 @@ namespace BloodLink.Forms
                 };
             }
 
-            pnlContent.Controls.Clear();
-
-            if(pageName == "Dashboard")
+            switch (pageName)
             {
-                var page = new AdminDashboardPage();
-                page.Dock = DockStyle.Fill;
-                pnlContent.Controls.Add(page);
-                return;
-            }
+                case "Dashboard":
+                    ShowView(() => new AdminDashboardPage());
+                    break;
 
-            if(pageName == "Donors")
-            {
-                DonorService donorService = new DonorService();
-                var page = new DonorPage(donorService, _currentUser);
-                page.Dock = DockStyle.Fill;
-                pnlContent.Controls.Add(page);
-                return;
-            }
+                case "Donors":
+                    ShowView(() => new DonorPage(new DonorService(), _currentUser));
+                    break;
 
-            if(pageName == "Inventory")
-            {
-                BloodUnitService bloodUnitService = new BloodUnitService();
-                var page = new BloodUnitPage(bloodUnitService, _currentUser );
-                page.Dock = DockStyle.Fill;
-                pnlContent.Controls.Add(page);
-                return;
-            }
+                case "Inventory":
+                    ShowView(() => new BloodUnitPage(new BloodUnitService(), _currentUser));
+                    break;
 
-            if(pageName == "Patients")
-            {
-                PatientRequestService patientRequestService = new PatientRequestService();
-                var page = new PatientsPage(patientRequestService, _currentUser);
-                page.Dock = DockStyle.Fill;
-                pnlContent.Controls.Add(page);
-                return;
-            }
+                case "Patients":
+                    ShowView(() => new PatientsPage(new PatientRequestService(), _currentUser));
+                    break;
 
-            if(pageName == "Reports")
-            {
-                var page = new ReportsPage();
-                page.Dock = DockStyle.Fill;
-                pnlContent.Controls.Add(page);
-                return;
-            }
+                case "Reports":
+                    ShowView(() => new ReportsPage());
+                    break;
 
-            if(pageName == "Staff")
-            {
-                AuthService _authService = new AuthService();
-                var page = new StaffPage(_authService, _currentUser);
-                page.Dock = DockStyle.Fill;
-                pnlContent.Controls.Add(page);
-                return;
-            }
-            if (pageName == "Settings")
-            {
-                var page = new SettingPage(this);
-                page.Dock = DockStyle.Fill;
-                pnlContent.Controls.Add(page);
-                return;
-            }
+                case "Staff":
+                    ShowView(() => new StaffPage(new AuthService(), _currentUser));
+                    break;
 
+                case "Settings":
+                    ShowView(() => new SettingPage(this));
+                    break;
+            }
         }
 
         private void LoadDefaultPage() => LoadPage("Dashboard");
@@ -676,15 +676,15 @@ namespace BloodLink.Forms
         private void CheckAndExpireUnits()
         {
             _unitService.CheckAndExpireUnits();
-            Timer expiryTimer = new Timer();
-            expiryTimer.Interval = 60 * 60 * 1000;
-            expiryTimer.Tick += (s, e) => _unitService.CheckAndExpireUnits();
-            expiryTimer.Start();
+            _expiryTimer = new Timer();
+            _expiryTimer.Interval = 60 * 60 * 1000;
+            _expiryTimer.Tick += (s, e) => _unitService.CheckAndExpireUnits();
+            _expiryTimer.Start();
         }
 
         private void LoadSavedSettings()
         {
-            string? saved = AppSettingsRepository.GetSetting("SessionTimeout");
+            string? saved = _appSettingRepository.GetSetting("SessionTimeout");
             if (saved != null && Enum.TryParse<SessionTimeout>(saved, out var timeout))
                 ApplySessionTimeout(timeout);
         }

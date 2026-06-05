@@ -1,6 +1,8 @@
-using BloodLink.Database;
+using BloodLink.Core.Models;
 using BloodLink.Forms;
-
+using BloodLink.Core.Database;
+using BloodLink.Core.Interfaces;
+using BloodLink.Core.Models;
 namespace BloodLink
 {
     internal static class Program

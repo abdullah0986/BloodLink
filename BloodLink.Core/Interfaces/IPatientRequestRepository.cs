@@ -1,9 +1,9 @@
-﻿using BloodLink.Models;
+﻿using BloodLink.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace BloodLink.Interfaces
+namespace BloodLink.Core.Interfaces
 {
     public interface IPatientRequestRepository
     {
@@ -12,9 +12,9 @@ namespace BloodLink.Interfaces
         public int DeleteRequest(string id);
         public List<PatientRequest> GetAllRequests();
         public List<PatientRequest> SearchPatientRequests(string searchItem, BloodGroup? bg, RequestStatus? rs);
-        public int GetAllPatientInDay();
-        public List<PatientModel> getRecentPatientRequests();
-        public int GetPatientsPendingToday();
-        public Dictionary<string, int> GetRequestStatusStats();
+        public Task<int> GetAllPatientInDayAsync();
+        public Task<List<PatientModel>> getRecentPatientRequestsAsync();
+        public Task<int> GetPatientsPendingTodayAsync();
+        public Task<Dictionary<string, int>> GetRequestStatusStatsAsync();
     }
 }

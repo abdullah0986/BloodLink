@@ -1,7 +1,7 @@
 ﻿using Microsoft.Data.Sqlite;
-using BloodLink.Models;
+using BloodLink.Core.Models;
 
-namespace BloodLink.Database
+namespace BloodLink.Core.Database
 {
     public static class DatabaseHelper
     {

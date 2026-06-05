@@ -1,27 +1,21 @@
-﻿using BloodLink.Helpers;
-using BloodLink.Interfaces;
-using BloodLink.Models;
-using BloodLink.Pages;
-using Microsoft.Data.Sqlite;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using BloodLink.Core.Helpers;
+using BloodLink.Core.Interfaces;
+using BloodLink.Core.Models;
+using Microsoft.Data.SqlClient;
 
-namespace BloodLink.Database
+namespace BloodLink.Core.Database
 {
-    public class PatientRequestRepository: IPatientRequestRepository
+    public class PatientRequestRepository : IPatientRequestRepository
     {
-
         int IPatientRequestRepository.AddRequest(PatientRequest patientRequest)
         {
             try
             {
-                using SqliteConnection connection = DatabaseHelper.GetConnection();
+                using SqlConnection connection = DbConnection.GetConnection();
                 string sql = @"INSERT INTO PatientRequests 
                             (Id, PatientName, PatientAge, BloodGroup, UnitsRequired, Ward, DoctorName, Status, Notes, UserId, CreatedAt)
-                            Values (@id, @patientName, @patientAge, @bloodGroup, @unitsRequired, @ward, @doctorName, @status, @notes
-                             , @userId, @createdAt);";
-                SqliteCommand cmd = new SqliteCommand(sql, connection);
+                            VALUES (@id, @patientName, @patientAge, @bloodGroup, @unitsRequired, @ward, @doctorName, @status, @notes, @userId, @createdAt);";
+                SqlCommand cmd = new SqlCommand(sql, connection);
                 cmd.Parameters.AddWithValue("@id", patientRequest.Id);
                 cmd.Parameters.AddWithValue("@patientName", patientRequest.PatientName.ToString());
                 cmd.Parameters.AddWithValue("@patientAge", patientRequest.PatientAge ?? (object)DBNull.Value);
@@ -35,17 +29,18 @@ namespace BloodLink.Database
                 cmd.Parameters.AddWithValue("@createdAt", patientRequest.CreatedAt);
                 return cmd.ExecuteNonQuery();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine($"Error adding patient request. {ex.Message}");
                 throw;
             }
         }
+
         int IPatientRequestRepository.UpdateRequest(PatientRequest patientRequest)
         {
             try
             {
-                using SqliteConnection conn = DatabaseHelper.GetConnection();
+                using SqlConnection conn = DbConnection.GetConnection();
                 string sql = @"UPDATE PatientRequests SET
                                 PatientName = @patientName,
                                 PatientAge = @patientAge, 
@@ -57,10 +52,10 @@ namespace BloodLink.Database
                                 Notes = @notes, 
                                 UserId = @userId
                                WHERE Id = @id;";
-                SqliteCommand cmd = new SqliteCommand(sql, conn);
+                SqlCommand cmd = new SqlCommand(sql, conn);
                 cmd.Parameters.AddWithValue("@id", patientRequest.Id);
                 cmd.Parameters.AddWithValue("@patientName", patientRequest.PatientName.ToString());
-                cmd.Parameters.AddWithValue("@patientAge", patientRequest.PatientAge);
+                cmd.Parameters.AddWithValue("@patientAge", patientRequest.PatientAge ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@bloodGroup", EnumHelper.GetDescription(patientRequest.BloodGroup));
                 cmd.Parameters.AddWithValue("@unitsRequired", patientRequest.UnitsRequired <= 0 ? 0 : patientRequest.UnitsRequired);
                 cmd.Parameters.AddWithValue("@ward", (object?)patientRequest.Ward ?? (object)DBNull.Value);
@@ -70,59 +65,56 @@ namespace BloodLink.Database
                 cmd.Parameters.AddWithValue("@userId", patientRequest.userId);
                 return cmd.ExecuteNonQuery();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine($"Error while updating patient Request. {ex.Message}");
                 throw;
             }
         }
+
         int IPatientRequestRepository.DeleteRequest(string id)
         {
             try
             {
-                using SqliteConnection conn = DatabaseHelper.GetConnection();
+                using SqlConnection conn = DbConnection.GetConnection();
                 string sql = @"DELETE FROM PatientRequests WHERE Id = @id";
-
-                SqliteCommand cmd = new SqliteCommand(sql, conn);
+                SqlCommand cmd = new SqlCommand(sql, conn);
                 cmd.Parameters.AddWithValue("@id", id);
                 return cmd.ExecuteNonQuery();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine($"Error while deleting patient Request. {ex.Message}");
                 throw;
             }
         }
+
         List<PatientRequest> IPatientRequestRepository.GetAllRequests()
         {
             List<PatientRequest> _pr = new List<PatientRequest>();
-
             try
             {
-                using SqliteConnection conn = DatabaseHelper.GetConnection();
+                using SqlConnection conn = DbConnection.GetConnection();
                 string sql = @"SELECT * FROM PatientRequests ORDER BY CreatedAt DESC";
-
-                SqliteCommand cmd = new SqliteCommand(sql, conn);
-                SqliteDataReader reader = cmd.ExecuteReader();
-
+                SqlCommand cmd = new SqlCommand(sql, conn);
+                SqlDataReader reader = cmd.ExecuteReader();
                 while (reader.Read())
-                {
                     _pr.Add(MapPatientRequest(reader));
-                }
                 return _pr;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error while getting list of Pateient Requests. {ex.Message}");
+                Console.WriteLine($"Error while getting list of Patient Requests. {ex.Message}");
                 throw;
             }
         }
+
         List<PatientRequest> IPatientRequestRepository.SearchPatientRequests(string searchTerm, BloodGroup? bg, RequestStatus? rs)
         {
             List<PatientRequest> _pr = new List<PatientRequest>();
             try
             {
-                using SqliteConnection conn = DatabaseHelper.GetConnection();
+                using SqlConnection conn = DbConnection.GetConnection();
                 string sql = @"PatientName LIKE @searchTerm";
 
                 if (bg != null)
@@ -132,7 +124,7 @@ namespace BloodLink.Database
                     sql += " AND Status = @status";
 
                 string completeSql = $"SELECT * FROM PatientRequests WHERE {sql} ORDER BY CreatedAt ASC";
-                SqliteCommand cmd = new SqliteCommand(completeSql, conn);
+                SqlCommand cmd = new SqlCommand(completeSql, conn);
                 cmd.Parameters.AddWithValue("@searchTerm", $"%{searchTerm.Trim()}%");
 
                 if (bg != null)
@@ -140,66 +132,69 @@ namespace BloodLink.Database
                 if (rs != null)
                     cmd.Parameters.AddWithValue("@status", EnumHelper.GetDescription(rs));
 
-                SqliteDataReader reader = cmd.ExecuteReader();
+                SqlDataReader reader = cmd.ExecuteReader();
                 while (reader.Read())
-                {
                     _pr.Add(MapPatientRequest(reader));
-                }
 
                 return _pr;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine($"Error while searching Patient Requests. {ex.Message}");
                 throw;
             }
         }
-        int IPatientRequestRepository.GetAllPatientInDay()
+
+        async Task<int> IPatientRequestRepository.GetAllPatientInDayAsync()
         {
             try
             {
-                using var connection = DatabaseHelper.GetConnection();
-                string sql = @"SELECT COUNT(*) FROM PatientRequests WHERE CreatedAt >= datetime('now', '-24 hours');";
-                using var command = new SqliteCommand(sql, connection);
-                return Convert.ToInt32(command.ExecuteScalar());
+                using var connection = DbConnection.GetConnection();
+                string sql = @"SELECT COUNT(*) FROM PatientRequests 
+                               WHERE CreatedAt >= DATEADD(HOUR, -24, GETUTCDATE());";
+                using var command = new SqlCommand(sql, connection);
+                return Convert.ToInt32(await command.ExecuteScalarAsync());
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error fetching patient requests: {ex.Message}");
+                Console.WriteLine($"Error fetching patient requests: {ex.Message}");
                 return 0;
             }
         }
 
-        int IPatientRequestRepository.GetPatientsPendingToday()
+        async Task<int> IPatientRequestRepository.GetPatientsPendingTodayAsync()
         {
             try
             {
-                using var connection = DatabaseHelper.GetConnection();
-                string sql = @"SELECT COUNT(*) FROM PatientRequests WHERE (CreatedAt >= datetime('now', '-24 hours') AND Status = 'Pending');";
-                using var command = new SqliteCommand(sql, connection);
-                return Convert.ToInt32(command.ExecuteScalar());
+                using var connection = DbConnection.GetConnection();
+                string sql = @"SELECT COUNT(*) FROM PatientRequests 
+                               WHERE CreatedAt >= DATEADD(HOUR, -24, GETUTCDATE()) 
+                               AND Status = 'Pending';";
+                using var command = new SqlCommand(sql, connection);
+                return Convert.ToInt32(await command.ExecuteScalarAsync());
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error fetching patient requests: {ex.Message}");
+                Console.WriteLine($"Error fetching pending patient requests: {ex.Message}");
                 return 0;
             }
         }
-        List<PatientModel> IPatientRequestRepository.getRecentPatientRequests()
+
+        async Task<List<PatientModel>> IPatientRequestRepository.getRecentPatientRequestsAsync()
         {
             var requests = new List<PatientModel>();
             try
             {
-                using var connection = DatabaseHelper.GetConnection();
+                using var connection = DbConnection.GetConnection(); 
 
                 const string sql = @"
                     SELECT PatientName, BloodGroup, UnitsRequired, DoctorName, Status, CreatedAt
                     FROM PatientRequests
-                    WHERE (CreatedAt >= datetime('now','-24 hours') OR Status == 'Pending')
+                    WHERE (CreatedAt >= DATEADD(HOUR, -24, GETUTCDATE()) OR Status = 'Pending')
                     ORDER BY CreatedAt DESC;";
 
-                using var command = new SqliteCommand(sql, connection);
-                using var reader = command.ExecuteReader();
+                using var command = new SqlCommand(sql, connection);
+                using var reader = await command.ExecuteReaderAsync();
 
                 if (!reader.HasRows)
                     return requests;
@@ -209,8 +204,9 @@ namespace BloodLink.Database
                 int idxUnits = reader.GetOrdinal("UnitsRequired");
                 int idxDoctor = reader.GetOrdinal("DoctorName");
                 int idxStatus = reader.GetOrdinal("Status");
+                int idxCreatedAt = reader.GetOrdinal("CreatedAt");
 
-                while (reader.Read())
+                while (await reader.ReadAsync())
                 {
                     var model = new PatientModel();
 
@@ -218,15 +214,9 @@ namespace BloodLink.Database
                         ? reader.GetString(idxPatientName)
                         : string.Empty;
 
-                    if (!reader.IsDBNull(idxBloodGroup))
-                    {
-                        var groupStr = reader.GetString(idxBloodGroup);
-                        model.group = groupStr;
-                    }
-                    else
-                    {
-                        model.group = default;
-                    }
+                    model.group = !reader.IsDBNull(idxBloodGroup)
+                        ? reader.GetString(idxBloodGroup)
+                        : default;
 
                     model.unitsRequired = !reader.IsDBNull(idxUnits)
                         ? reader.GetInt32(idxUnits)
@@ -247,35 +237,35 @@ namespace BloodLink.Database
                     {
                         model.status = default;
                     }
-                    model.CreatedAt = !reader.IsDBNull(reader.GetOrdinal("CreatedAt"))
-                                    ? DateTime.Parse(reader.GetString(reader.GetOrdinal("CreatedAt")))
-                                    : DateTime.Now;
+
+                    model.CreatedAt = !reader.IsDBNull(idxCreatedAt)
+                        ? reader.GetDateTime(idxCreatedAt)
+                        : DateTime.UtcNow;
+
                     requests.Add(model);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error fetching recent patient requests: {ex.Message}");
+                Console.WriteLine($"Error fetching recent patient requests: {ex.Message}");
             }
-
             return requests;
         }
 
-        Dictionary<string, int> IPatientRequestRepository.GetRequestStatusStats()
+        async Task<Dictionary<string, int>> IPatientRequestRepository.GetRequestStatusStatsAsync()
         {
             var result = new Dictionary<string, int>();
             try
             {
-                using var connection = DatabaseHelper.GetConnection();
-                string sql = @"
-            SELECT Status, COUNT(*) as Count
-            FROM PatientRequests
-            WHERE strftime('%Y-%m', CreatedAt) = @currentMonth
-            GROUP BY Status";
-                using var command = new SqliteCommand(sql, connection);
-                command.Parameters.AddWithValue("@currentMonth", DateTime.UtcNow.ToString("yyyy-MM"));
-                using var reader = command.ExecuteReader();
-                while (reader.Read())
+                using var connection = DbConnection.GetConnection();
+                string sql = @"SELECT Status, COUNT(*) as Count
+                               FROM PatientRequests
+                               WHERE YEAR(CreatedAt) = YEAR(GETUTCDATE())
+                               AND MONTH(CreatedAt) = MONTH(GETUTCDATE())
+                               GROUP BY Status";
+                using var command = new SqlCommand(sql, connection);
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
                 {
                     string status = reader["Status"]?.ToString() ?? string.Empty;
                     int count = Convert.ToInt32(reader["Count"]);
@@ -285,27 +275,29 @@ namespace BloodLink.Database
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error fetching request status stats: {ex.Message}");
+                Console.WriteLine($"Error fetching request status stats: {ex.Message}");
             }
             return result;
         }
 
-
-        private PatientRequest MapPatientRequest(SqliteDataReader reader)
+        private PatientRequest MapPatientRequest(SqlDataReader reader)
         {
             return new PatientRequest
             {
                 Id = reader["Id"].ToString()!,
                 PatientName = reader["PatientName"].ToString()!,
-                PatientAge = reader["PatientAge"] == DBNull.Value ? null : Convert.ToInt32(reader["PatientAge"]),
-                BloodGroup = EnumHelper.GetValueFromDescription<BloodGroup>(reader["BloodGroup"]?.ToString() ?? string.Empty),
+                PatientAge = reader["PatientAge"] == DBNull.Value
+                    ? null
+                    : Convert.ToInt32(reader["PatientAge"]),
+                BloodGroup = EnumHelper.GetValueFromDescription<BloodGroup>(
+                    reader["BloodGroup"]?.ToString() ?? string.Empty),
                 UnitsRequired = Convert.ToInt32(reader["UnitsRequired"]),
-                Ward = reader["Ward"].ToString() ?? "Outsider",
-                DoctorName = reader["DoctorName"].ToString() ?? "N/A",
+                Ward = reader["Ward"] == DBNull.Value ? null : reader["Ward"].ToString(),
+                DoctorName = reader["DoctorName"] == DBNull.Value ? null : reader["DoctorName"].ToString(),
                 Status = Enum.Parse<RequestStatus>(reader["Status"]?.ToString() ?? "Pending"),
-                Notes = reader["Notes"].ToString()!,
-                userId = reader["userId"].ToString()!,
-                CreatedAt = DateTime.Parse(reader["CreatedAt"].ToString() ?? string.Empty)
+                Notes = reader["Notes"] == DBNull.Value ? null : reader["Notes"].ToString(),
+                userId = reader["UserId"] == DBNull.Value ? null : reader["UserId"].ToString()!,
+                CreatedAt = reader.GetDateTime(reader.GetOrdinal("CreatedAt"))
             };
         }
     }

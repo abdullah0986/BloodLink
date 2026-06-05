@@ -5,16 +5,14 @@ using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
 using LiveChartsCore.SkiaSharpView.WinForms;
 using System.Data;
-using LiveChartsCore;
-using LiveChartsCore.SkiaSharpView;
-using LiveChartsCore.SkiaSharpView.WinForms;
-using LiveChartsCore.SkiaSharpView.Painting;
 using SkiaSharp;
-using BloodLink.Models;
+using BloodLink.Core.Models;
+using BloodLink.Core.Interfaces;
+using System.Threading.Tasks; // Required for Task support
 
 namespace BloodLink.Pages
 {
-    public partial class ReportsPage : UserControl
+    public partial class ReportsPage : UserControl, IRefreshablePage
     {
         private readonly PaintHelper _paintHelper = new PaintHelper();
         private BloodUnitService _bloodUnitService = new BloodUnitService();
@@ -25,14 +23,21 @@ namespace BloodLink.Pages
         public ReportsPage()
         {
             InitializeComponent();
-
             ApplyTheme();
-            loadData();
-            LoadStockData();
-            SetupBloodStockBars();
-            SetupMonthlyDonationsChart();
-            SetupRequestStatusChart();
+
+            _ = InitPageDataAsync();
         }
+
+        private async Task InitPageDataAsync()
+        {
+            await loadData();                             
+            await LoadStockData();                  
+
+            SetupBloodStockBars();                  
+            await SetupMonthlyDonationsChart();     
+            await SetupRequestStatusChart();        
+        }
+
         private void ApplyTheme()
         {
             this.BackColor = AppTheme.MainBackground;
@@ -79,38 +84,47 @@ namespace BloodLink.Pages
             lbl.Font = AppTheme.FontHeader;
         }
 
-        private void loadData()
+        public async Task RefreshPageDataAsync()
         {
-            BloodUnitStats issuedUnits = _bloodUnitService.GetBloodUnitStats();
-            int totalUnits = _bloodUnitService.CollectionThisMonth();
+            await InitPageDataAsync();
+        }
+
+        public void RefreshPageData()
+        {
+            _ = InitPageDataAsync();
+        }
+
+        private async Task loadData()
+        {
+            BloodUnitStats issuedUnits = await _bloodUnitService.GetBloodUnitStatsAsync();
+            int totalUnits = await _bloodUnitService.CollectionThisMonthAsync();
 
             lblUnitsColledtedCount.Text = totalUnits.ToString();
             int unitsIssued = issuedUnits.UsedUnits;
             lblUnitsIssuedCount.Text = unitsIssued.ToString();
-            
+
             int unitsExpired = issuedUnits.ExpiredUnits;
             lblUnitsExpiredCount.Text = unitsExpired.ToString();
         }
 
-        private void LoadStockData()
+        private async Task LoadStockData()
         {
-            var _stockDict = _bloodUnitService.GetStockByBloodGroup();
+            var _stockDict = await _bloodUnitService.GetStockByBloodGroupAsync();
 
             var groups = new[] { "O+", "A+", "B+", "O-", "A-", "AB+", "B-", "AB-" };
 
-            _stockData = groups.Select
-            (g =>
+            _stockData = groups.Select(g =>
             {
                 var units = _stockDict.ContainsKey(g) ? _stockDict[g] : 0;
                 var level = units <= 10 ? "critical" :
-                        units <= 20 ? "low" :
-                        "normal";
+                            units <= 20 ? "low" :
+                            "normal";
                 return (g, units, level);
             }).ToArray();
 
             _maxUnits = _stockData.Length > 0 ?
-                         Math.Max(1, _stockData.Max(u => u.Units)) :
-                         1;
+                        Math.Max(1, _stockData.Max(u => u.Units)) :
+                        1;
         }
 
         private void SetupBloodStockBars()
@@ -148,13 +162,10 @@ namespace BloodLink.Pages
                 var (group, units, level) = _stockData[i];
                 int midY = i * rowHeight + rowHeight / 2;
 
-                // Label
                 using var labelBrush = new SolidBrush(Color.FromArgb(201, 184, 182));
                 using var labelFont = new Font("Segoe UI", 10f);
-                g.DrawString(group, labelFont, labelBrush,
-                    new RectangleF(0, midY - 8, labelWidth, 16));
+                g.DrawString(group, labelFont, labelBrush, new RectangleF(0, midY - 8, labelWidth, 16));
 
-                // Bar background
                 int barX = labelWidth + barPadLeft;
                 int barW = bounds.Width - labelWidth - valueWidth - barPadLeft - barPadRight;
                 int barY = midY - barHeight / 2;
@@ -162,7 +173,6 @@ namespace BloodLink.Pages
                 using var bgBrush = new SolidBrush(Color.FromArgb(26, 10, 8));
                 g.FillRectangle(bgBrush, new RectangleF(barX, barY, barW, barHeight));
 
-                // Bar fill
                 float pct = (float)units / _maxUnits;
                 Color fillColor = level switch
                 {
@@ -173,32 +183,30 @@ namespace BloodLink.Pages
                 using var fillBrush = new SolidBrush(fillColor);
                 g.FillRectangle(fillBrush, new RectangleF(barX, barY, barW * pct, barHeight));
 
-                // Value — right-aligned inside valueWidth area
                 using var valFont = new Font("Segoe UI", 10f, FontStyle.Bold);
-                using var valBrush = new SolidBrush(
-                    level == "critical" ? Color.FromArgb(192, 57, 43)
-                                        : Color.FromArgb(245, 240, 239));
+                using var valBrush = new SolidBrush(level == "critical" ? Color.FromArgb(192, 57, 43) : Color.FromArgb(245, 240, 239));
 
                 var valRect = new RectangleF(barX + barW, midY - 8, valueWidth, 16);
-                var valFormat = new StringFormat { Alignment = StringAlignment.Far }; // right-align
+                var valFormat = new StringFormat { Alignment = StringAlignment.Far };
                 g.DrawString(units.ToString(), valFont, valBrush, valRect, valFormat);
             }
         }
 
-        private void SetupMonthlyDonationsChart()
+        // Added 'async' keyword to method matching what constructor needs
+        private async Task SetupMonthlyDonationsChart()
         {
             var months = Enumerable.Range(0, 6)
                          .Select(i => DateTime.UtcNow.AddMonths(-5 + i))
                          .ToList();
 
-            var donationDate = _bloodUnitService.GetMonthlyDonations();
+            // Note: Make sure to implement GetMonthlyDonationsAsync in your service file later!
+            var donationDate = await _bloodUnitService.GetMonthlyDonationsAsync();
 
             var values = months.Select(m =>
-                                {
-                                    string key = m.ToString("yyyy-MM");
-                                    return donationDate.ContainsKey(key) ? donationDate[key] : 0;
-                                }
-                             );
+            {
+                string key = m.ToString("yyyy-MM");
+                return donationDate.ContainsKey(key) ? donationDate[key] : 0;
+            });
 
             var labels = months.Select(m => m.ToString("MMM")).ToArray();
 
@@ -209,7 +217,6 @@ namespace BloodLink.Pages
                     : SKColor.Parse("#740A03")
             ).ToArray();
 
-            // chart is building form here
             var chart = new CartesianChart
             {
                 Dock = DockStyle.Fill,
@@ -218,43 +225,41 @@ namespace BloodLink.Pages
 
             chart.Series = new ISeries[]
             {
-        new ColumnSeries<int?>
-        {
-            Values = values.Cast<int?>().ToArray(),
-            Fill = new SolidColorPaint(SKColor.Parse("#740A03")),
-            Stroke = null,
-            MaxBarWidth = 28,
-            DataLabelsSize = 13,
-            IgnoresBarPosition = true,
-            DataLabelsPaint = new SolidColorPaint(SKColor.Parse("#C9B8B6")),
-            DataLabelsPosition = LiveChartsCore.Measure.DataLabelsPosition.Top,
-            DataLabelsFormatter = point => point.Coordinate.PrimaryValue.ToString("0"),
-        }
+                new ColumnSeries<int?>
+                {
+                    Values = values.Cast<int?>().ToArray(),
+                    Fill = new SolidColorPaint(SKColor.Parse("#740A03")),
+                    Stroke = null,
+                    MaxBarWidth = 28,
+                    DataLabelsSize = 13,
+                    IgnoresBarPosition = true,
+                    DataLabelsPaint = new SolidColorPaint(SKColor.Parse("#C9B8B6")),
+                    DataLabelsPosition = LiveChartsCore.Measure.DataLabelsPosition.Top,
+                    DataLabelsFormatter = point => point.Coordinate.PrimaryValue.ToString("0"),
+                }
             };
 
             chart.XAxes = new[]
             {
-        new Axis
-        {
-            Labels = labels,
-            LabelsPaint = new SolidColorPaint(SKColor.Parse("#eeeeee")),
-            TicksPaint = null,
-            SeparatorsPaint = null,
-            TextSize = 13,
-        }
-    };
+                new Axis
+                {
+                    Labels = labels,
+                    LabelsPaint = new SolidColorPaint(SKColor.Parse("#eeeeee")),
+                    TicksPaint = null,
+                    SeparatorsPaint = null,
+                    TextSize = 13,
+                }
+            };
 
             chart.YAxes = new[]
             {
-        new Axis
-        {
-            IsVisible = false, // hide Y axis for clean look
-            SeparatorsPaint = null,
-        }
-    };
+                new Axis
+                {
+                    IsVisible = false,
+                    SeparatorsPaint = null,
+                }
+            };
 
-            // 7. Add into row 1 of tlpMonthlyDonations
-            // Clear first
             for (int i = tlpMonthlyDonations.Controls.Count - 1; i >= 0; i--)
             {
                 if (tlpMonthlyDonations.GetRow(tlpMonthlyDonations.Controls[i]) == 1)
@@ -263,6 +268,7 @@ namespace BloodLink.Pages
 
             tlpMonthlyDonations.Controls.Add(chart, 0, 1);
         }
+
         private void StyledStatCard(TableLayoutPanel tlp, Label heading, Label count, Label footer, Color color)
         {
             tlp.BackColor = AppTheme.ContentBackground;
@@ -275,15 +281,16 @@ namespace BloodLink.Pages
             _paintHelper.AddRounding(tlp);
         }
 
-        private void SetupRequestStatusChart()
+        // Added 'async' keyword to match implementation requirements
+        private async Task SetupRequestStatusChart()
         {
-            var stats = _patientRequestService.GetRequestStatusStats();
+            // Note: Ensure GetRequestStatusStatsAsync() is added to PatientRequestService later
+            var stats = await _patientRequestService.GetRequestStatusStatsAsync();
 
             int fulfilled = stats.ContainsKey("Fulfilled") ? stats["Fulfilled"] : 0;
             int pending = stats.ContainsKey("Pending") ? stats["Pending"] : 0;
             int cancelled = stats.ContainsKey("Cancelled") ? stats["Cancelled"] : 0;
-            //int total = fulfilled + pending + cancelled;
-
+            int total = fulfilled + pending + cancelled;
 
             lblFulfilledCount.Text = fulfilled.ToString();
             lblPendingCount.Text = pending.ToString();
@@ -294,37 +301,38 @@ namespace BloodLink.Pages
                 Dock = DockStyle.Fill,
                 BackColor = AppTheme.ContentBackground,
                 InitialRotation = -90,
+                LegendPosition = LiveChartsCore.Measure.LegendPosition.Hidden,
             };
 
             chart.Series = new ISeries[]
             {
-        new PieSeries<double>
-        {
-            Values          = new double[] { fulfilled },
-            Fill            = new SolidColorPaint(SKColor.Parse("#27AE60")),
-            Stroke          = null,
-            InnerRadius     = 58,
-            DataLabelsSize  = 0,
-            DataLabelsPaint = null,
-        },
-        new PieSeries<double>
-        {
-            Values          = new double[] { pending },
-            Fill            = new SolidColorPaint(SKColor.Parse("#F39C12")),
-            Stroke          = null,
-            InnerRadius     = 58,
-            DataLabelsSize  = 0,
-            DataLabelsPaint = null,
-        },
-        new PieSeries<double>
-        {
-            Values          = new double[] { cancelled },
-            Fill            = new SolidColorPaint(SKColor.Parse("#C0392B")),
-            Stroke          = null,
-            InnerRadius     = 58,
-            DataLabelsSize  = 0,
-            DataLabelsPaint = null,
-        },
+                new PieSeries<double>
+                {
+                    Values      = new double[] { Math.Max(fulfilled, 0.001) },
+                    Fill        = new SolidColorPaint(SKColor.Parse("#27AE60")),
+                    Stroke      = null,
+                    InnerRadius = 58,
+                    DataLabelsSize  = 0,
+                    DataLabelsPaint = null,
+                },
+                new PieSeries<double>
+                {
+                    Values      = new double[] { Math.Max(pending, 0.001) },
+                    Fill        = new SolidColorPaint(SKColor.Parse("#F39C12")),
+                    Stroke      = null,
+                    InnerRadius = 58,
+                    DataLabelsSize  = 0,
+                    DataLabelsPaint = null,
+                },
+                new PieSeries<double>
+                {
+                    Values      = new double[] { Math.Max(cancelled, 0.001) },
+                    Fill        = new SolidColorPaint(SKColor.Parse("#C0392B")),
+                    Stroke      = null,
+                    InnerRadius = 58,
+                    DataLabelsSize  = 0,
+                    DataLabelsPaint = null,
+                },
             };
 
             pnlPiChart.Controls.Clear();
@@ -332,6 +340,7 @@ namespace BloodLink.Pages
 
             var totalLabel = new Label
             {
+                Text = total.ToString(),
                 ForeColor = AppTheme.PrimaryText,
                 Font = AppTheme.FontHeader,
                 BackColor = Color.Transparent,
@@ -341,16 +350,16 @@ namespace BloodLink.Pages
 
             pnlPiChart.Controls.Add(totalLabel);
 
-            pnlPiChart.SizeChanged += (s, e) =>
+            void CenterLabel()
             {
                 totalLabel.Left = (pnlPiChart.Width - totalLabel.Width) / 2;
                 totalLabel.Top = (pnlPiChart.Height - totalLabel.Height) / 2;
                 totalLabel.BringToFront();
-            };
+            }
 
-            totalLabel.Left = (pnlPiChart.Width - totalLabel.Width) / 2;
-            totalLabel.Top = (pnlPiChart.Height - totalLabel.Height) / 2;
-            totalLabel.BringToFront();
+            pnlPiChart.SizeChanged += (s, e) => CenterLabel();
+            pnlPiChart.HandleCreated += (s, e) => CenterLabel();
+            this.Load += (s, e) => CenterLabel();
         }
 
         internal class BufferedPanel : Panel
@@ -358,7 +367,7 @@ namespace BloodLink.Pages
             public BufferedPanel()
             {
                 this.DoubleBuffered = true;
-                this.ResizeRedraw = true; // redraws cleanly on every resize
+                this.ResizeRedraw = true;
             }
         }
 
@@ -366,16 +375,12 @@ namespace BloodLink.Pages
         {
             e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
-            // 2. Define the green brush
             using (SolidBrush greenBrush = new SolidBrush(Color.LimeGreen))
             {
-                // 3. Position the circle exactly relative to your label
-                // This places it 15 pixels to the left, centered vertically with the label
                 int circleSize = 12;
                 int x = lblFulfilled.Left - circleSize - 5;
                 int y = lblFulfilled.Top + (lblFulfilled.Height - circleSize) / 2;
 
-                // 4. Draw the filled circle
                 e.Graphics.FillEllipse(greenBrush, x, y, circleSize, circleSize);
             }
         }

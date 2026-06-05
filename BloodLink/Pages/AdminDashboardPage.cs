@@ -1,24 +1,26 @@
-﻿using BloodLink.Helpers;
-using BloodLink.Models;
-using System.Drawing;
-using System.Drawing.Drawing2D;
-using BloodLink.Database;
+﻿using BloodLink.Core.Database;
+using BloodLink.Core.Interfaces;
+using BloodLink.Core.Models;
+using BloodLink.Helpers;
 using BloodLink.Services;
-using System.Net;
-using System.Windows.Forms;
+using System.Drawing.Drawing2D;
 
 namespace BloodLink.Pages
 {
-    public partial class AdminDashboardPage : UserControl
+    public partial class AdminDashboardPage : UserControl, IRefreshablePage
     {
         private readonly DonorService _donorService = new DonorService();
+        private readonly DonorService donorService = new DonorService();
+        private readonly BloodUnitService bloodUnitService = new BloodUnitService();
+        private readonly PatientRequestService patientRequestService = new PatientRequestService();
+        private readonly IAppSettingRepository _appSettingRepository = new AppSettingsRepository();
         private readonly PaintHelper _paintHelper = new PaintHelper();
         private bool _allowSelection = false;
         public AdminDashboardPage()
         {
             InitializeComponent();
             ApplyTheme();
-            loadData();
+            _ = LoadDataAsync();
 
             this.HandleCreated += AdminDashboardPage_HandleCreated;
             dgvExpiringUnits.SelectionChanged += (s, e) => {
@@ -164,55 +166,62 @@ namespace BloodLink.Pages
             countLabel.Anchor = AnchorStyles.None;
         }
 
-        private void loadData()
+        public async Task LoadDataAsync()
         {
-            var donorService = new DonorService();
-            DonorStats stats = donorService.GetDashboardStats();
+            await loadData();
+        }
+        public void RefreshPageData()
+        {
+            _allowSelection = false;
+            _ = LoadDataAsync();
+            _allowSelection = true;
+        }
+        private async Task loadData()
+        {
+            DonorStats stats = await donorService.GetDonorStatsAsync();
             lblTotalDonorCount.Text = stats != null ? stats.TotalDonors.ToString() : "0";
             string donorThisMonth = _donorService.DonorsThisMonth().ToString();
             lblTotalDonorInfo.Text = $"+{donorThisMonth} this month";
 
-            var bloodUnitService = new BloodUnitService();
-            var bloodUnitStats = bloodUnitService.GetBloodUnitStats();
+            var bloodUnitStats = await bloodUnitService.GetBloodUnitStatsAsync();
             lblBloodUnitsCount.Text = bloodUnitStats.TotalUnits.ToString() ?? "0";
 
-            var patientRequestService = new PatientRequestService();
-            int totalPatientToday = patientRequestService.GetAllPatientInDay();
+            int totalPatientToday = await patientRequestService.GetAllPatientInDayAsync();
             lblPatientTodayCount.Text = totalPatientToday.ToString() ?? "0";
-            int patientsPendingToday = patientRequestService.GetPatientsPendingToday();
+            int patientsPendingToday = await patientRequestService.GetPatientsPendingTodayAsync();
             lblPatientTodayInfo.Text = $"{patientsPendingToday} in Pending";
 
-            int expiringSoonCount = bloodUnitService.getExpiringSoonCount();
+            int expiringSoonCount = await bloodUnitService.getExpiringSoonCountAsync();
             lblExpiringSoonCount.Text = expiringSoonCount.ToString() ?? "0";
-            string withInDays = AppSettingsRepository.GetSetting("ExpiryThreshold");
+            string withInDays = _appSettingRepository.GetSetting("ExpiryThreshold");
             lblExpiringSoonInfo.Text = $"within {withInDays} days";
 
-            int APlusCount = bloodUnitService.getBloodGroupCount(BloodGroup.APositive);
+            int APlusCount = await bloodUnitService.getBloodGroupCountAsync(BloodGroup.APositive);
             lblAPlusCount.Text = APlusCount.ToString() ?? "0";
-            int AMiusCount = bloodUnitService.getBloodGroupCount(BloodGroup.ANegative);
+            int AMiusCount = await bloodUnitService.getBloodGroupCountAsync(BloodGroup.ANegative);
             lblAMinusCount.Text = AMiusCount.ToString() ?? "0";
-            int BPlusCount = bloodUnitService.getBloodGroupCount(BloodGroup.BPositive);
+            int BPlusCount = await bloodUnitService.getBloodGroupCountAsync(BloodGroup.BPositive);
             lblBPlusCount.Text = BPlusCount.ToString() ?? "0";
-            int BMinusCount = bloodUnitService.getBloodGroupCount(BloodGroup.BNegative);
+            int BMinusCount = await bloodUnitService.getBloodGroupCountAsync(BloodGroup.BNegative);
             lblBMinusCount.Text = BMinusCount.ToString() ?? "0";
-            int OPlusCount = bloodUnitService.getBloodGroupCount(BloodGroup.OPositive);
+            int OPlusCount = await bloodUnitService.getBloodGroupCountAsync(BloodGroup.OPositive);
             lblOPlusCount.Text = OPlusCount.ToString() ?? "0";
-            int OMinusCount = bloodUnitService.getBloodGroupCount(BloodGroup.ONegative);
+            int OMinusCount = await bloodUnitService.getBloodGroupCountAsync(BloodGroup.ONegative);
             lblOMinusCount.Text = OMinusCount.ToString() ?? "0";
-            int ABPlusCount = bloodUnitService.getBloodGroupCount(BloodGroup.ABPositive);
+            int ABPlusCount = await bloodUnitService.getBloodGroupCountAsync(BloodGroup.ABPositive);
             lblABPlusCount.Text = ABPlusCount.ToString() ?? "0";
-            int ABMinusCount = bloodUnitService.getBloodGroupCount(BloodGroup.ABNegative);
+            int ABMinusCount = await bloodUnitService.getBloodGroupCountAsync(BloodGroup.ABNegative);
             lblABMinusCount.Text = ABMinusCount.ToString() ?? "0";
 
             dgvExpiringUnits.Rows.Clear();
-            Dictionary<string, int> expiringUnits = bloodUnitService.getExpiringUnits();
+            Dictionary<string, int> expiringUnits = await bloodUnitService.getExpiringUnitsAsync();
             foreach (var expiryUnit in expiringUnits)
             {
                 dgvExpiringUnits.Rows.Add(expiryUnit.Key, $"{expiryUnit.Value} days");
             }
 
             dgvPatientRequests.Rows.Clear();
-            var patientRequests = patientRequestService.GetRecentPatientRequests();
+            var patientRequests = await patientRequestService.GetRecentPatientRequestsAsync();
             foreach (var request in patientRequests)
             {
                 int rowIndex = dgvPatientRequests.Rows.Add(
@@ -338,9 +347,6 @@ namespace BloodLink.Pages
             return path;
         }
 
-        // ─────────────────────────────────────────────────
-        // EMPTY EVENT HANDLERS
-        // ─────────────────────────────────────────────────
         private void lblTotalDonor_Click(object sender, EventArgs e) { }
         private void lblPatientTodayCount_Click(object sender, EventArgs e) { }
         private void lblPatientTodayInfo_Click(object sender, EventArgs e) { }

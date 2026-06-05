@@ -1,11 +1,12 @@
-﻿using BloodLink.Database;
-using BloodLink.Models;
+﻿using BloodLink.Core.Database;
+using BloodLink.Core.Interfaces;
+using BloodLink.Core.Models;
 
 namespace BloodLink.Services
 {
     public class AuthService
     {
-        private readonly UserRepository _userRepository;
+        private readonly IUserRepository _userRepository;
 
         public AuthService()
         {

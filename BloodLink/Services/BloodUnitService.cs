@@ -1,7 +1,7 @@
-﻿using BloodLink.Database;
+﻿using BloodLink.Core.Database;
 using BloodLink.Helpers;
-using BloodLink.Interfaces;
-using BloodLink.Models;
+using BloodLink.Core.Interfaces;
+using BloodLink.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -114,42 +114,42 @@ namespace BloodLink.Services
             return _bloodUnitRepository.SearchBloodUnits(bg, status);
         }
 
-        public BloodUnitStats GetBloodUnitStats()
+        public async Task<BloodUnitStats> GetBloodUnitStatsAsync()
         {
-            return _bloodUnitRepository.GetBloodUnitStats();
+            return await _bloodUnitRepository.GetBloodUnitStatsAsync();
         }
 
-        public int CollectionThisMonth()
+        public async Task<int> CollectionThisMonthAsync()
         {
-            return _bloodUnitRepository.CollectionThisMonth();
+            return await _bloodUnitRepository.CollectionThisMonthAsync();
         }
-        public int getBloodGroupCount(Enum BloodGroup)
+        public async Task<int> getBloodGroupCountAsync(Enum BloodGroup)
         {
             if(!Enum.IsDefined(BloodGroup.GetType(), BloodGroup))
             {
                 return -1;
             }
-            return _bloodUnitRepository.getBloodGroupCount(BloodGroup);
+            return await _bloodUnitRepository.getBloodGroupCountAsync(BloodGroup);
         }
 
-        public int getExpiringSoonCount()
+        public async Task<int> getExpiringSoonCountAsync()
         {
-            return _bloodUnitRepository.getExpiringSoonCount();
+            return await _bloodUnitRepository.getExpiringSoonCountAsync();
         }
 
-        public Dictionary<string, int> getExpiringUnits()
+        public async Task<Dictionary<string, int>> getExpiringUnitsAsync()
         {
-            return _bloodUnitRepository.getExpiringUnits();
+            return await _bloodUnitRepository.getExpiringUnitsAsync();
         }
 
-        public Dictionary<string, int> GetStockByBloodGroup()
+        public async Task<Dictionary<string, int>> GetStockByBloodGroupAsync()
         {
-            return _bloodUnitRepository.GetStockByBloodGroup();
+            return await _bloodUnitRepository.GetStockByBloodGroupAsync();
         }
 
-        public Dictionary<string, int> GetMonthlyDonations(int monthsBack = 6)
+        public async Task<Dictionary<string, int>> GetMonthlyDonationsAsync(int monthsBack = 6)
         {
-            return _bloodUnitRepository.GetMonthlyDonations(monthsBack);
+            return await _bloodUnitRepository.GetMonthlyDonationsAsync(monthsBack);
         }
 
         public void CheckAndExpireUnits()

@@ -4,7 +4,7 @@ using System.Text;
 
 using System.ComponentModel;
 
-namespace BloodLink.Models
+namespace BloodLink.Core.Models
 {
     public enum Role
     {

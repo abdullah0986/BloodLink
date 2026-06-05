@@ -1,6 +1,6 @@
 ﻿using BloodLink.Forms;
 using BloodLink.Helpers;
-using BloodLink.Models;
+using BloodLink.Core.Models;
 using BloodLink.Services;
 using Color = System.Drawing.Color;
 using System.Data;
@@ -108,14 +108,14 @@ namespace BloodLink.Pages
 
         }
 
-        private void loadData()
+        private async Task loadData()
         {
-            BloodUnitStats Stats = _service.GetBloodUnitStats();
+            BloodUnitStats Stats = await _service.GetBloodUnitStatsAsync();
             int totalUnits = Stats.TotalUnits;
             int availableUnits = Stats.AvailableUnits;
             int reservedUnits = Stats.ReservedUnits;
 
-            int expiringSoon = _service.getExpiringSoonCount();
+            int expiringSoon = await _service.getExpiringSoonCountAsync();
             int expiring = expiringSoon;
 
             lblTotalUnitsCount.Text = totalUnits.ToString() ?? "0";

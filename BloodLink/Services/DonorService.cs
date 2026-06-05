@@ -1,11 +1,12 @@
-﻿using BloodLink.Database;
+﻿using BloodLink.Core.Database;
 using BloodLink.Helpers;
-using BloodLink.Models;
+using BloodLink.Core.Models;
+using BloodLink.Core.Interfaces;
 namespace BloodLink.Services
 {
     public class DonorService
     {
-        private readonly DonorRepository _donorRepo;
+        private readonly IDonorRepository _donorRepo;
 
         public DonorService()
         {
@@ -173,9 +174,9 @@ namespace BloodLink.Services
                 return 0;
             return donorThisMonths;
         }
-        public DonorStats GetDashboardStats()
+        public async Task<DonorStats> GetDonorStatsAsync()
         {
-            return _donorRepo.GetDonorStats();
+            return await _donorRepo.GetDonorStatsAsync();
         }
 
         public List<Donor> GetAllDonors() 

@@ -9,15 +9,17 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="BCrypt.Net-Next" Version="4.1.0" />
+    <PackageReference Include="BCrypt.Net-Next" Version="4.2.0" />
     <PackageReference Include="CsvHelper" Version="33.1.0" />
     <PackageReference Include="FontAwesome.Sharp" Version="6.6.0" />
     <PackageReference Include="LiveChartsCore.SkiaSharpView.WinForms" Version="2.0.4" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.5" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.1" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.8" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="10.0.8" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Resources\" />
+    <ProjectReference Include="..\BloodLink.Core\BloodLink.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

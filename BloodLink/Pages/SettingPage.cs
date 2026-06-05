@@ -1,7 +1,8 @@
-﻿using BloodLink.Database;
+﻿using BloodLink.Core.Database;
+using BloodLink.Core.Interfaces;
+using BloodLink.Core.Models;
 using BloodLink.Forms;
 using BloodLink.Helpers;
-using BloodLink.Models;
 using System;
 using System.Linq;
 using System.Windows.Forms;
@@ -10,6 +11,7 @@ namespace BloodLink.Pages
 {
     public partial class SettingPage : UserControl
     {
+        private readonly IAppSettingRepository _appSettingRepository = new AppSettingsRepository();
         private readonly PaintHelper _paintHelper = new PaintHelper();
         private MouseClickFilter _mouseFilter;
         private readonly DashboardShell _dashboard;
@@ -28,14 +30,14 @@ namespace BloodLink.Pages
             _mouseFilter = new MouseClickFilter(tbThresholdCount);
             Application.AddMessageFilter(_mouseFilter);
 
-            string? savedThreshold = AppSettingsRepository.GetSetting("ExpiryThreshold");
+            string? savedThreshold = _appSettingRepository.GetSetting("ExpiryThreshold");
             tbThresholdCount.Text = savedThreshold ?? "7";
 
             tbThresholdCount.TextChanged += (s, e) => 
             {
                 if (int.TryParse(tbThresholdCount.Text, out int days) && days > 0)
                 {
-                    AppSettingsRepository.SaveSetting("ExpiryThreshold", days.ToString());
+                    _appSettingRepository.SaveSetting("ExpiryThreshold", days.ToString());
                 }
             };
         }
@@ -104,7 +106,7 @@ namespace BloodLink.Pages
             cbSessionValue.ValueMember = "Value";
 
             // Load saved setting
-            string? saved = AppSettingsRepository.GetSetting("SessionTimeout");
+            string? saved = _appSettingRepository.GetSetting("SessionTimeout");
             if (saved != null && Enum.TryParse<SessionTimeout>(saved, out var savedTimeout))
             {
                 cbSessionValue.SelectedItem = timeouts.FirstOrDefault(t => t.Value == savedTimeout);
@@ -118,7 +120,7 @@ namespace BloodLink.Pages
             cbSessionValue.SelectedIndexChanged += (s, e) =>
             {
                 SessionTimeout selected = (SessionTimeout)cbSessionValue.SelectedValue;
-                AppSettingsRepository.SaveSetting("SessionTimeout", selected.ToString());
+                _appSettingRepository.SaveSetting("SessionTimeout", selected.ToString());
                 _dashboard.ApplySessionTimeout(selected);
             };
         }

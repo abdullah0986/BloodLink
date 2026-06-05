@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace BloodLink.Models
+namespace BloodLink.Core.Models
 {
     public class Donor
     {

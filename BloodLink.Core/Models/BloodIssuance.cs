@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace BloodLink.Models
+namespace BloodLink.Core.Models
 {
     public class BloodIssuance
     {

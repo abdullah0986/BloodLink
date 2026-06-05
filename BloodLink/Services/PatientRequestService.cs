@@ -1,6 +1,6 @@
-﻿using BloodLink.Database;
-using BloodLink.Interfaces;
-using BloodLink.Models;
+﻿using BloodLink.Core.Database;
+using BloodLink.Core.Interfaces;
+using BloodLink.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -30,13 +30,13 @@ namespace BloodLink.Services
             if (request.PatientAge.HasValue && request.PatientAge > 100)
                 return (-1, "Valid Patient Age is required.");
 
-            if(request.BloodGroup == default(BloodGroup))
+            if (request.BloodGroup == null)
                 return (-1, "Please Select Valid Blood Group");
 
             if (request.UnitsRequired <= 0)
                 return (-1, "Units Required must be greater than 0");
 
-            if (request.Status == default(RequestStatus))
+            if (request.Status == null)
                 return (-1, "Please Select Valid Request Status");
 
             request.Id = PatientRequest.generatePatientRequestId();
@@ -62,13 +62,13 @@ namespace BloodLink.Services
             if (request.PatientAge.HasValue && request.PatientAge > 100)
                 return (-1, "Valid Patient Age is required.");
 
-            if (request.BloodGroup == default(BloodGroup))
+            if (request.BloodGroup == null)
                 return (-1, "Please Select Valid Blood Group");
 
             if (request.UnitsRequired <= 0)
                 return (-1, "Units Required must be greater than 0");
 
-            if (request.Status == default(RequestStatus))
+            if (request.Status == null)
                 return (-1, "Please Select Valid Request Status");
             try
             {
@@ -105,24 +105,24 @@ namespace BloodLink.Services
             return _patientRequestRepository.SearchPatientRequests(searchTerm, bg, rs);
         }
 
-        public int GetAllPatientInDay()
+        public async Task<int> GetAllPatientInDayAsync()
         {
-            return _patientRequestRepository.GetAllPatientInDay();
+            return await _patientRequestRepository.GetAllPatientInDayAsync();
         }
 
-        public int GetPatientsPendingToday()
+        public async Task<int> GetPatientsPendingTodayAsync()
         {
-            return _patientRequestRepository.GetPatientsPendingToday();
+            return await _patientRequestRepository.GetPatientsPendingTodayAsync();
         }
 
-        public List<PatientModel> GetRecentPatientRequests()
+        public async Task<List<PatientModel>> GetRecentPatientRequestsAsync()
         {
-            return _patientRequestRepository.getRecentPatientRequests();
+            return await _patientRequestRepository.getRecentPatientRequestsAsync();
         }
 
-        public Dictionary<string, int> GetRequestStatusStats()
+        public async Task<Dictionary<string, int>> GetRequestStatusStatsAsync()
         {
-            return _patientRequestRepository.GetRequestStatusStats();
+            return await _patientRequestRepository.GetRequestStatusStatsAsync();
         }
     }
 }

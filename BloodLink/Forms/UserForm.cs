@@ -1,5 +1,5 @@
 ﻿using BloodLink.Helpers;
-using BloodLink.Models;
+using BloodLink.Core.Models;
 using BloodLink.Services;
 using System;
 using System.Collections.Generic;
