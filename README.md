@@ -57,21 +57,18 @@ The application uses **role-based access control** with two roles: `Admin` and `
 
 ## 🗂️ Project Structure
 BloodLink/
-├── BloodLink.WindowsApp
-|   ├── Program.cs                  # Application entry point
-|   ├── App.config                  # Database connection configuration
-|   ├── Forms/                       # Dialog forms (Login, Donor, BloodUnit, Patient, User)
-|   ├── Pages/                        # Dashboard pages (Donor, BloodUnit, Patients, Reports, Staff, Settings, AdminDashboard)
-|   ├── Services/                     # Business logic layer (AuthService, DonorService, BloodUnitService, PatientRequestService)
-|   ├── Helpers/                       # AppTheme, PaintHelper, EnumHelper (UI helpers)
-
 ├── Core/
-│   ├── Database/                 # Repositories & DB connection
-│   ├── Interfaces/               # Repository interfaces
-│   ├── Models/                   # Data models (Donor, BloodUnit, PatientRequest, User, etc.)
-│   └── Helpers/                  # EnumHelper and utility helpers
-
----
+│   ├── Database/           # Repositories & DB connection
+│   ├── Interfaces/         # Repository interfaces
+│   ├── Models/             # Data models (Donor, BloodUnit, PatientRequest, User, etc.)
+│   └── Helpers/            # EnumHelper and utility helpers
+└── BloodLink.WindowsApp/
+    ├── Program.cs          # Application entry point
+    ├── App.config          # Database connection configuration
+    ├── Forms/              # Dialog forms (Login, Donor, BloodUnit, Patient, User)
+    ├── Pages/              # Dashboard pages (Donor, BloodUnit, Reports, etc.)
+    ├── Services/           # Business logic layer (AuthService, DonorService, etc.)
+    └── Helpers/            # UI helpers (AppTheme, PaintHelper, EnumHelper)
 
 ---
 
