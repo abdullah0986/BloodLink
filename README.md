@@ -4,7 +4,7 @@ BloodLink is a desktop application built with **C# (.NET, WinForms)** designed t
 
 ---
 
-## 📋 Table of Content
+## 📋 Table of Contents
 
 - [About the Project](#about-the-project)
 - [Features](#features)
